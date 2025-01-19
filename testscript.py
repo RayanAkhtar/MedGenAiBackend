@@ -1,11 +1,10 @@
 import requests
-import json
 
 # Base URL for the Heroku app
 BASE_URL = "https://med-gen-ai-backend-c632db28528e.herokuapp.com/execute_sql"
 
-# Function to send POST requests with a SQL query
 def execute_sql_query(query):
+    """Helper function to send POST requests with a SQL query."""
     response = requests.post(
         BASE_URL,
         json={"query": query},
@@ -13,8 +12,8 @@ def execute_sql_query(query):
     )
     return response
 
-# Test 1: Test API connection with a simple select query
 def test_connection():
+    """Test API connection with a simple SELECT query."""
     query = "SELECT 1;"
     response = execute_sql_query(query)
     assert response.status_code == 200, f"Expected 200 OK, got {response.status_code}"

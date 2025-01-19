@@ -4,6 +4,9 @@ click
 Flask
 Flask-Cors
 Flask-SQLAlchemy
+flask
+flask_sqlalchemy
+flask_cors
 gunicorn
 greenlet
 iniconfig

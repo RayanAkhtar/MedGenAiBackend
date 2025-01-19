@@ -69,5 +69,6 @@ def execute_sql():
         logging.error(f"General Error: {str(e)}")
         return jsonify({"error": "An error occurred", "details": str(e)}), 400
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5328)
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 5328))
+    app.run(debug=True, host="0.0.0.0", port=port)
