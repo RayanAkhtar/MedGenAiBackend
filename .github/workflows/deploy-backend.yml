@@ -41,5 +41,5 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          heroku git:remote -a your-heroku-app-name
+          heroku git:remote -a med-gen-ai-backend
           git push heroku main

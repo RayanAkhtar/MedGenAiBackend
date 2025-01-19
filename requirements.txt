@@ -4,6 +4,7 @@ click
 Flask
 Flask-Cors
 Flask-SQLAlchemy
+gunicorn
 greenlet
 iniconfig
 itsdangerous
