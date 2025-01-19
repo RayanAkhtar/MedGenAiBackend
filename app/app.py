@@ -27,7 +27,7 @@ db.init_app(app)
 
 @app.route('/hello')
 def hello():
-    return jsonify(message="Hello, world!")
+    return jsonify(message="Hello, world!"), 200
 
 @app.route('/execute_sql', methods=['POST'])
 def execute_sql():
@@ -47,7 +47,7 @@ def execute_sql():
                 rows.append(row_dict)
             return jsonify(rows)
 
-        return jsonify({"message": "Query executed successfully"})
+        return jsonify({"message": "Query executed successfully"}), 200
 
     except Exception as e:
         db.session.rollback()
