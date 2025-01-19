@@ -2,16 +2,16 @@ import os
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy  
 from flask_cors import CORS
-from sqlalchemy import text 
-import json
+from sqlalchemy import text
 
 
-db = SQLAlchemy()  
+db = SQLAlchemy()
 
 
 app = Flask(__name__)
 
 CORS(app)
+
 
 
 app.config.from_mapping(
@@ -22,6 +22,7 @@ app.config.from_mapping(
 
 db.init_app(app)
 
+
 class Competition(db.Model):
     __tablename__ = 'competitions'
 
@@ -29,6 +30,7 @@ class Competition(db.Model):
     name = db.Column(db.String(100), nullable=False)
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
+
 
 class CompetitionUser(db.Model):
     __tablename__ = 'competition_users'
@@ -38,24 +40,31 @@ class CompetitionUser(db.Model):
     user_id = db.Column(db.Integer, nullable=False)
     score = db.Column(db.Integer, nullable=False)
 
-    competition = db.relationship('competition', backref=db.backref('users', lazy=True))
+    competition = db.relationship('Competition', backref=db.backref('users', lazy=True))
 
-# Creates database and tables if they don't exist
-with app.app_context():
-    db.create_all()
+
+
+def create_db():
+    with app.app_context():
+        db.create_all()
+
+create_db()
 
 
 @app.route('/hello')
 def hello():
     return jsonify(message="Hello, world!"), 200
 
+
 @app.route('/execute_sql', methods=['POST'])
 def execute_sql():
     try:
-        data = request.get_data(as_text=True)
-        json_data = json.loads(data) if data else {}
+        json_data = request.get_json()
+        
+        if not json_data:
+            return jsonify({"error": "No JSON data provided"}), 400
+        
         sql_query = json_data.get('query')
-
         if not sql_query:
             return jsonify({"error": "No SQL query provided"}), 400
 
