@@ -2,7 +2,7 @@ import requests
 import json
 
 # Base URL for the Heroku app
-BASE_URL = "https://med-gen-ai-1b15f76974da.herokuapp.com/execute_sql"
+BASE_URL = "https://med-gen-ai-backend-c632db28528e.herokuapp.com/execute_sql"
 
 # Function to send POST requests with a SQL query
 def execute_sql_query(query):
