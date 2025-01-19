@@ -41,5 +41,10 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          heroku git:remote -a med-gen-ai-backend
+          git remote add heroku https://git.heroku.com/med-gen-ai-backend.git
           git push heroku main
+
+      # Step 6: Scale the web dyno
+      - name: Scale web dyno
+        run: |
+          heroku ps:scale web=1 --app med-gen-ai-backend
