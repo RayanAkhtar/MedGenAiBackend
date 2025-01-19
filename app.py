@@ -3,26 +3,48 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy  
 from flask_cors import CORS
 from sqlalchemy import text 
+import json
 
-# Initialize the database object
+
 db = SQLAlchemy()  
 
-# Initialize Flask app
+
 app = Flask(__name__)
 
 CORS(app)
 
-# Load configuration
+
 app.config.from_mapping(
     SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
     SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///medgen.db'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 )
 
-# Initialize the database with the app
 db.init_app(app)
 
-# Define the routes directly on the app object
+class Competition(db.Model):
+    __tablename__ = 'competitions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=False)
+
+class CompetitionUser(db.Model):
+    __tablename__ = 'competition_users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    competition_id = db.Column(db.Integer, db.ForeignKey('competitions.id'), nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)
+    score = db.Column(db.Integer, nullable=False)
+
+    competition = db.relationship('competition', backref=db.backref('users', lazy=True))
+
+# Creates database and tables if they don't exist
+with app.app_context():
+    db.create_all()
+
+
 @app.route('/hello')
 def hello():
     return jsonify(message="Hello, world!"), 200
@@ -30,7 +52,10 @@ def hello():
 @app.route('/execute_sql', methods=['POST'])
 def execute_sql():
     try:
-        sql_query = request.json.get('query')
+        data = request.get_data(as_text=True)
+        json_data = json.loads(data) if data else {}
+        sql_query = json_data.get('query')
+
         if not sql_query:
             return jsonify({"error": "No SQL query provided"}), 400
 
@@ -51,6 +76,6 @@ def execute_sql():
         db.session.rollback()
         return jsonify({"error": "An error occurred", "details": str(e)}), 400
 
-# If this is the main module, run the Flask app
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.getenv("PORT", 5328)))
