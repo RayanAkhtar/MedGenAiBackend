@@ -24,7 +24,6 @@ app.config.from_mapping(
 db.init_app(app)
 
 # Define the routes directly on the app object
-
 @app.route('/hello')
 def hello():
     return jsonify(message="Hello, world!"), 200
@@ -52,7 +51,6 @@ def execute_sql():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "An error occurred", "details": str(e)}), 400
-
 
 # If this is the main module, run the Flask app
 if __name__ == "__main__":
