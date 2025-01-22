@@ -41,25 +41,23 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
-      # Step 6: Set Heroku API Key
-      - name: Export Heroku API Key
+      # Step 6: Authenticate Heroku CLI
+      - name: Authenticate Heroku CLI
         run: |
-          export HEROKU_API_KEY="HRKU-85d198a3-2bf7-49eb-ac04-c4147027b11f"
+          echo -e "machine api.heroku.com\n  login heroku\n  password HRKU-85d198a3-2bf7-49eb-ac04-c4147027b11f\nmachine git.heroku.com\n  login heroku\n  password HRKU-85d198a3-2bf7-49eb-ac04-c4147027b11f" > ~/.netrc
+          chmod 600 ~/.netrc
 
       # Step 7: Set Heroku Remote
       - name: Set Heroku Remote
         run: |
-          heroku git:remote -a med-gen-ai-backend
+          git remote add heroku https://git.heroku.com/med-gen-ai-backend.git
 
       # Step 8: Deploy to Heroku
       - name: Deploy to Heroku
-        uses: akhileshns/heroku-deploy@v3.12.12
-        with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: "med-gen-ai-backend"
-          heroku_email: "rayanakhtar2003@gmail.com"
+        run: |
+          git push heroku main --force
 
-      # Step 9: Scale the web dyno
+      # Step 9: Scale web dyno
       - name: Scale web dyno
         run: |
           heroku ps:scale web=1 --app med-gen-ai-backend
