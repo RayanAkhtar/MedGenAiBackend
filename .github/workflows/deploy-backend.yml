@@ -36,7 +36,12 @@ jobs:
           source venv/bin/activate
           pytest
 
-      # Step 5: Deploy to Heroku
+      # Step 5: Install Heroku CLI
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+      # Step 6: Deploy to Heroku
       - name: Deploy to Heroku
         uses: akhileshns/heroku-deploy@v3.12.12
         with:
@@ -44,7 +49,7 @@ jobs:
           heroku_app_name: "med-gen-ai-backend"
           heroku_email: "rayanakhtar2003@gmail.com"
 
-      # Step 6: Scale the web dyno
+      # Step 7: Scale the web dyno
       - name: Scale web dyno
         run: |
           heroku ps:scale web=1 --app med-gen-ai-backend
