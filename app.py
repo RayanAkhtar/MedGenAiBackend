@@ -12,11 +12,13 @@ app = Flask(__name__)
 
 CORS(app)
 
-
+uri = os.environ.get('DATABASE_URL', 'sqlite:///medgen.db')
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
 
 app.config.from_mapping(
     SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
-    SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///medgen.db'),
+    SQLALCHEMY_DATABASE_URI=uri,
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 )
 
