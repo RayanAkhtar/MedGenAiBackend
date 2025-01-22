@@ -44,11 +44,10 @@ class CompetitionUser(db.Model):
 
     competition = db.relationship('Competition', backref=db.backref('users', lazy=True))
 
-
-@app.before_first_request
 def create_db():
     with app.app_context():
         db.create_all()
+create_db()
 
 @app.route('/hello')
 def hello():
