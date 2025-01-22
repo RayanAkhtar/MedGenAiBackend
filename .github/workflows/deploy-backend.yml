@@ -41,7 +41,17 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
-      # Step 6: Deploy to Heroku
+      # Step 6: Set Heroku API Key
+      - name: Export Heroku API Key
+        run: |
+          export HEROKU_API_KEY="HRKU-85d198a3-2bf7-49eb-ac04-c4147027b11f"
+
+      # Step 7: Set Heroku Remote
+      - name: Set Heroku Remote
+        run: |
+          heroku git:remote -a med-gen-ai-backend
+
+      # Step 8: Deploy to Heroku
       - name: Deploy to Heroku
         uses: akhileshns/heroku-deploy@v3.12.12
         with:
@@ -49,7 +59,7 @@ jobs:
           heroku_app_name: "med-gen-ai-backend"
           heroku_email: "rayanakhtar2003@gmail.com"
 
-      # Step 7: Scale the web dyno
+      # Step 9: Scale the web dyno
       - name: Scale web dyno
         run: |
           heroku ps:scale web=1 --app med-gen-ai-backend
