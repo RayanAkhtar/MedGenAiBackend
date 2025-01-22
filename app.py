@@ -51,6 +51,9 @@ def create_db():
         db.create_all()
 
 
+@app.route('/')
+def index():
+    return "Welcome to the Med-Gen AI Backend!"
 
 @app.route('/hello')
 def hello():
