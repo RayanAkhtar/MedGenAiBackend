@@ -15,7 +15,7 @@ def execute_sql_query(query):
     return response
 
 
-def cleanup():
+def cleanup(): 
     """Delete all records in tables."""
     queries = [
         "DELETE FROM competitions;",
