@@ -1,9 +1,9 @@
 # services/admin.py
 
 from __init__ import db
-from sqlalchemy import text
+from sqlalchemy import text, bindparam
+from datetime import datetime 
 
-# Function to get guesses per month
 def get_guesses_per_month():
     try:
         query = text("""
@@ -18,7 +18,6 @@ def get_guesses_per_month():
         result = db.session.execute(query)
         db.session.commit()
 
-        # Convert query result to a list of dictionaries
         rows = []
         for row in result:
             row_dict = {column: value for column, value in zip(result.keys(), row)}
@@ -29,7 +28,6 @@ def get_guesses_per_month():
         db.session.rollback()
         return {"error": str(e)}
 
-# Function to get image detection accuracy per month
 def get_image_detection_accuracy():
     try:
         query = text("""
@@ -54,7 +52,6 @@ def get_image_detection_accuracy():
         db.session.rollback()
         return {"error": str(e)}
 
-# Function to get feedback instances per month
 def get_feedback_instances():
     try:
         query = text("""
@@ -78,7 +75,6 @@ def get_feedback_instances():
         db.session.rollback()
         return {"error": str(e)}
 
-# Function to get total real images and detection accuracy
 def get_total_real_images():
     try:
         query = text("""
@@ -101,7 +97,6 @@ def get_total_real_images():
         db.session.rollback()
         return {"error": str(e)}
 
-# Function to get total AI images and detection accuracy
 def get_total_ai_images():
     try:
         query = text("""
@@ -124,7 +119,6 @@ def get_total_ai_images():
         db.session.rollback()
         return {"error": str(e)}
 
-# Function to get feedback resolution status (resolved and unresolved counts)
 def get_feedback_resolution_status():
     try:
         query = text("""
@@ -146,7 +140,6 @@ def get_feedback_resolution_status():
         db.session.rollback()
         return {"error": str(e)}
 
-# Function to get matching feedback for a specific image
 def get_matching_feedback_for_image(image_id):
     try:
         query = text(f"""
@@ -174,7 +167,6 @@ def get_matching_feedback_for_image(image_id):
         db.session.rollback()
         return {"error": str(e)}
 
-# Function to get random unresolved feedback for a specific image
 def get_random_unresolved_feedback(image_id):
     try:
         query = text(f"""
@@ -199,3 +191,79 @@ def get_random_unresolved_feedback(image_id):
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
+
+
+def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
+    try:
+        query_str = """
+            SELECT 
+                images.image_id,
+                images.image_path,
+                images.image_type,
+                COUNT(CASE WHEN feedback.resolved = 0 THEN 1 END) AS unresolved_count,
+                MAX(feedback.date_added) AS last_feedback_time,
+                images.upload_time
+            FROM images
+            LEFT JOIN user_guesses ON user_guesses.image_id = images.image_id
+            LEFT JOIN feedback_users ON feedback_users.guess_id = user_guesses.guess_id
+            LEFT JOIN feedback ON feedback.feedback_id = feedback_users.feedback_id
+            WHERE 1=1
+        """
+
+        if image_type != "all":
+            query_str += " AND images.image_type = :image_type"
+
+        if resolved is not None:
+            query_str += " AND feedback.resolved = :resolved"
+
+        if sort_by:
+            valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
+            if sort_by == "image_id":
+                query_str += "ORDER BY images.image_id"  # Resolves ambiguous image_id reference
+            elif sort_by in valid_sort_fields:
+                query_str += f" ORDER BY {sort_by}"
+            else:
+                raise ValueError("Invalid sort field provided.")
+
+        query = text(query_str)
+
+        params = {}
+        if image_type:
+            params['image_type'] = image_type
+        if resolved is not None:
+            params['resolved'] = resolved
+
+        result = db.session.execute(query, params)
+
+        feedback_data = []
+        for row in result.mappings(): 
+            last_feedback_time = row['last_feedback_time']
+            if isinstance(last_feedback_time, str):
+                last_feedback_time = last_feedback_time 
+            elif isinstance(last_feedback_time, datetime): 
+                last_feedback_time = last_feedback_time.strftime('%Y-%m-%d')
+            else:
+                last_feedback_time = None
+
+            upload_time = row['upload_time']
+            if isinstance(upload_time, str):
+                upload_time = upload_time 
+            elif isinstance(upload_time, datetime):
+                upload_time = upload_time.strftime('%Y-%m-%d')
+            else:
+                upload_time = None
+
+            feedback_data.append({
+                'image_id': row['image_id'],
+                'image_path': row['image_path'],
+                'image_type': row['image_type'],
+                'unresolved_count': row['unresolved_count'],
+                'last_feedback_time': last_feedback_time,
+                'upload_time': upload_time
+            })
+
+        return feedback_data 
+    except Exception as e:
+        print(f"Error fetching feedback: {e}")
+        return []

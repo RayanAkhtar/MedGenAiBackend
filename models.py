@@ -41,6 +41,8 @@ class Images(db.Model):
     image_path = db.Column(db.String(255), nullable=False)
     image_type = db.Column(db.String(50), nullable=False)
 
+    upload_time = db.Column(db.DateTime, nullable=False)
+
 
 class UserGuess(db.Model):
     __tablename__ = 'user_guesses'
@@ -72,3 +74,4 @@ class Feedback(db.Model):
     y = db.Column(db.Integer, nullable=False)
     msg = db.Column(db.String(255), nullable=False)
     resolved = db.Column(db.Boolean, default=False, nullable=False)
+    date_added = db.Column(db.DateTime, nullable=False)

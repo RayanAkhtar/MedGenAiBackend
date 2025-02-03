@@ -43,32 +43,32 @@ def insert_test_data():
         
         # Images (Updated paths to match the real images with "cf_" followed by condition names)
         """
-        INSERT INTO images (image_path, image_type)
+        INSERT INTO images (image_path, image_type, upload_time)
         VALUES 
-            ('/images_get/static/images/real/1_Pleural_Effusion.jpg', 'ai'),
-            ('/images_get/static/images/real/2_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/3_Pleural_Effusion.jpg', 'ai'),
-            ('/images_get/static/images/real/4_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/5_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/6_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/7_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/8_Pleural_Effusion.jpg', 'ai'),
-            ('/images_get/static/images/real/9_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/10_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/11_Pleural_Effusion.jpg', 'ai'),
-            ('/images_get/static/images/real/12_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/13_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/14_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/15_Pleural_Effusion.jpg', 'ai'),
-            ('/images_get/static/images/real/16_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/17_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/18_Pleural_Effusion.jpg', 'ai'),
-            ('/images_get/static/images/real/19_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/20_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/21_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/22_Pleural_Effusion.jpg', 'real'),
-            ('/images_get/static/images/real/23_Pleural_Effusion.jpg', 'ai'),
-            ('/images_get/static/images/real/24_Pleural_Effusion.jpg', 'real');
+            ('/images_get/static/images/real/1_Pleural_Effusion.jpg', 'ai', '2023-03-17'),
+            ('/images_get/static/images/real/2_Pleural_Effusion.jpg', 'real', '2023-03-17'),
+            ('/images_get/static/images/real/3_Pleural_Effusion.jpg', 'ai', '2023-03-17'),
+            ('/images_get/static/images/real/4_Pleural_Effusion.jpg', 'real', '2023-03-17'),
+            ('/images_get/static/images/real/5_Pleural_Effusion.jpg', 'real', '2023-03-13'),
+            ('/images_get/static/images/real/6_Pleural_Effusion.jpg', 'real', '2023-03-17'),
+            ('/images_get/static/images/real/7_Pleural_Effusion.jpg', 'real', '2023-03-16'),
+            ('/images_get/static/images/real/8_Pleural_Effusion.jpg', 'ai', '2023-03-14'),
+            ('/images_get/static/images/real/9_Pleural_Effusion.jpg', 'real', '2023-03-17'),
+            ('/images_get/static/images/real/10_Pleural_Effusion.jpg', 'real', '2023-03-17'),
+            ('/images_get/static/images/real/11_Pleural_Effusion.jpg', 'ai', '2023-03-12'),
+            ('/images_get/static/images/real/12_Pleural_Effusion.jpg', 'real', '2023-03-21'),
+            ('/images_get/static/images/real/13_Pleural_Effusion.jpg', 'real', '2023-03-17'),
+            ('/images_get/static/images/real/14_Pleural_Effusion.jpg', 'real', '2023-03-11'),
+            ('/images_get/static/images/real/15_Pleural_Effusion.jpg', 'ai', '2023-03-17'),
+            ('/images_get/static/images/real/16_Pleural_Effusion.jpg', 'real', '2023-03-12'),
+            ('/images_get/static/images/real/17_Pleural_Effusion.jpg', 'real', '2023-03-17'),
+            ('/images_get/static/images/real/18_Pleural_Effusion.jpg', 'ai', '2023-03-17'),
+            ('/images_get/static/images/real/19_Pleural_Effusion.jpg', 'real', '2023-03-13'),
+            ('/images_get/static/images/real/20_Pleural_Effusion.jpg', 'real', '2023-03-17'),
+            ('/images_get/static/images/real/21_Pleural_Effusion.jpg', 'real', '2023-03-14'),
+            ('/images_get/static/images/real/22_Pleural_Effusion.jpg', 'real', '2023-03-15'),
+            ('/images_get/static/images/real/23_Pleural_Effusion.jpg', 'ai', '2023-03-16'),
+            ('/images_get/static/images/real/24_Pleural_Effusion.jpg', 'real', '2023-03-18');
         """,
         
         # User Guesses (Updated: Corrected types and added more data)
@@ -130,23 +130,23 @@ def insert_test_data():
         
         # Feedback (Updated: Added more feedback)
         """
-        INSERT INTO feedback (feedback_id, x, y, msg, resolved)
+        INSERT INTO feedback (feedback_id, x, y, msg, resolved, date_added)
         VALUES 
-            (1, 0, 1, 'Great image quality', 1),
-            (2, 1, 0, 'Background needs work', 0),
-            (3, 2, 3, 'Perfect edge detection', 1),
-            (4, 3, 4, 'Blurry in corners', 0),
-            (5, 4, 5, 'Noise in shadow areas', 1),
-            (6, 0, 2, 'Too dark in some areas', 0),
-            (7, 1, 4, 'Excellent contrast and detail', 1),
-            (8, 2, 1, 'The lighting is too harsh on the subject', 0),
-            (9, 3, 5, 'The colors are off in the shadows', 1),
-            (10, 4, 2, 'The focus seems soft in the middle', 0),
-            (11, 5, 1, 'Great use of depth of field', 1),
-            (12, 6, 3, 'The image appears overexposed', 0),
-            (13, 0, 4, 'Lack of clarity in details', 1),
-            (14, 2, 2, 'Background feels too cluttered', 0),
-            (15, 1, 5, 'Nice composition and symmetry', 1);
+            (1, 0, 1, 'Great image quality', 1, '2023-04-21'),
+            (2, 1, 0, 'Background needs work', 0, '2023-04-21'),
+            (3, 2, 3, 'Perfect edge detection', 1, '2023-04-21'),
+            (4, 3, 4, 'Blurry in corners', 0, '2023-04-21'),
+            (5, 4, 5, 'Noise in shadow areas', 1, '2023-04-21'),
+            (6, 0, 2, 'Too dark in some areas', 0, '2023-04-21'),
+            (7, 1, 4, 'Excellent contrast and detail', 1, '2023-04-21'),
+            (8, 2, 1, 'The lighting is too harsh on the subject', 0, '2023-04-21'),
+            (9, 3, 5, 'The colors are off in the shadows', 1, '2023-04-21'),
+            (10, 4, 2, 'The focus seems soft in the middle', 0, '2023-04-21'),
+            (11, 5, 1, 'Great use of depth of field', 1, '2023-04-21'),
+            (12, 6, 3, 'The image appears overexposed', 0, '2023-04-21'),
+            (13, 0, 4, 'Lack of clarity in details', 1, '2023-04-21'),
+            (14, 2, 2, 'Background feels too cluttered', 0, '2023-04-21'),
+            (15, 1, 5, 'Nice composition and symmetry', 1, '2023-04-21');
         """,
         
         # Feedback Users (Updated: Added more feedback-users links)

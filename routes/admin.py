@@ -10,7 +10,8 @@ from services.admin import (
     get_total_ai_images,
     get_feedback_resolution_status,
     get_matching_feedback_for_image,
-    get_random_unresolved_feedback
+    get_random_unresolved_feedback,
+    get_feedback_with_filters
 )
 
 bp = Blueprint('admin', __name__)
@@ -115,3 +116,17 @@ def upload_ai_image():
 
     flash('Invalid file type')
     return jsonify({'error': 'Invalid file type'}), 400
+
+
+@bp.route('/admin/getFeedbacks', methods=['GET'])
+def get_feedbacks_route():
+    image_type = request.args.get('image_type')
+    resolved = request.args.get('resolved')
+    sort_by = request.args.get('sort_by')
+
+    resolved = True if resolved == 'true' else (False if resolved == 'false' else None)
+
+    feedback_data = get_feedback_with_filters(image_type=image_type, resolved=resolved, sort_by=sort_by)
+    return jsonify(feedback_data)
+
+
