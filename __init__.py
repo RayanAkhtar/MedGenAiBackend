@@ -1,0 +1,41 @@
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+import os
+
+db = SQLAlchemy()
+cors = CORS()
+
+def create_app(test_config=None):
+    app = Flask(__name__)
+    
+    # Configure the app
+    uri = os.environ.get('DATABASE_URL', 'sqlite:///medgen.db')
+    if uri.startswith("postgres://"):
+        uri = uri.replace("postgres://", "postgresql://", 1)
+
+    app.config.from_mapping(
+        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
+        SQLALCHEMY_DATABASE_URI=uri,
+        SQLALCHEMY_TRACK_MODIFICATIONS=False
+    )
+
+    if test_config is not None:
+        app.config.update(test_config)
+
+    # Initialize extensions
+    db.init_app(app)
+    cors.init_app(app)
+
+    with app.app_context():
+        # Register blueprints
+        from routes import bp
+        from routes.profile import bp as profile_bp
+        app.register_blueprint(bp)
+        app.register_blueprint(profile_bp)
+        
+        # Create database tables
+        db.create_all()
+
+    print(app.url_map)
+    return app 
