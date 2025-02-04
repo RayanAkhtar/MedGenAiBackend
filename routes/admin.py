@@ -11,7 +11,8 @@ from services.admin import (
     get_feedback_resolution_status,
     get_matching_feedback_for_image,
     get_random_unresolved_feedback,
-    get_feedback_with_filters
+    get_feedback_with_filters,
+    get_image_by_id
 )
 
 bp = Blueprint('admin', __name__)
@@ -130,3 +131,11 @@ def get_feedbacks_route():
     return jsonify(feedback_data)
 
 
+# Route to get the full record of an image based on image_id
+@bp.route('/admin/getImageById/<image_id>', methods=['GET'])
+def get_image_by_id_route(image_id):
+    image_data = get_image_by_id(image_id)
+    if image_data:
+        return jsonify(image_data), 200
+    else:
+        return jsonify({"error": "Image not found"}), 404

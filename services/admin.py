@@ -267,3 +267,32 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
     except Exception as e:
         print(f"Error fetching feedback: {e}")
         return []
+    
+
+def get_image_by_id(image_id):
+    try:
+        query = text("""
+            SELECT 
+                image_id, 
+                image_path, 
+                image_type, 
+                upload_time 
+            FROM images 
+            WHERE image_id = :image_id
+        """)
+        result = db.session.execute(query, {"image_id": image_id})
+        db.session.commit()
+
+        row = result.fetchone()  # Get a single record
+        
+        if row:
+            # Convert the row into a dictionary
+            image_data = {column: value for column, value in zip(result.keys(), row)}
+            return image_data
+        else:
+            return None  # Return None if no image was found
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error fetching image by id: {e}")
+        return None
