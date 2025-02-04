@@ -31,12 +31,16 @@ def create_app(test_config=None):
         # Register blueprints
         from routes import bp
         from routes.profile import bp as profile_bp
+        from routes.admin import bp as admin_bp
         from routes.game import  game_bp
         from middleware.auth import auth_bp
+        
         app.register_blueprint(bp)
         app.register_blueprint(profile_bp)
+        app.register_blueprint(admin_bp)
         app.register_blueprint(game_bp, url_prefix='/game')
         app.register_blueprint(auth_bp)
+
         # Create database tables
         db.create_all()
 
