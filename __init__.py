@@ -31,8 +31,10 @@ def create_app(test_config=None):
         # Register blueprints
         from routes import bp
         from routes.profile import bp as profile_bp
+        from routes.images import bp as image_bp
         app.register_blueprint(bp)
         app.register_blueprint(profile_bp)
+        app.register_blueprint(image_bp)
         
         # Create database tables
         db.create_all()
