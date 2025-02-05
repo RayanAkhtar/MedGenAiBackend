@@ -22,12 +22,12 @@ class GameService:
         """
         # Generate unique game ID
         game_id = str(uuid.uuid4())
-        
+        print (f"Game ID: {game_id}")
         # Get random images from database
         images = Images.query.filter_by(
             image_type=game_type
         ).order_by(db.func.random()).limit(image_count).all()
-        
+        print (f"Images: {images}")
         if not images:
             raise ValueError(f"No images found for game type: {game_type}")
         
