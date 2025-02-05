@@ -11,7 +11,8 @@ cors = CORS()
 
 def create_app(test_config=None):
     app = Flask(__name__)
-    
+
+
     # Configure the app
     uri = os.environ.get('DATABASE_URL', 'postgresql://default_user:default_password@localhost/medgen')
     if uri.startswith("postgres://"):
@@ -37,13 +38,14 @@ def create_app(test_config=None):
         from routes.admin import bp as admin_bp
         from routes.game import  game_bp
         from middleware.auth import auth_bp
-        
+        from routes.auth import auth_signup_bp
         app.register_blueprint(bp)
         app.register_blueprint(profile_bp)
         app.register_blueprint(admin_bp)
         app.register_blueprint(image_bp)
         app.register_blueprint(game_bp, url_prefix='/game')
         app.register_blueprint(auth_bp)
+        app.register_blueprint(auth_signup_bp)
 
         # Create database tables
         db.create_all()
