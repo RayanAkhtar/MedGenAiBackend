@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, flash
+from flask import Blueprint, jsonify, request, flash, send_from_directory
 import os
 from werkzeug.utils import secure_filename
 from __init__ import db
@@ -16,7 +16,9 @@ from services.admin import (
     get_confusion_matrix,
     get_image_difficulty,
     get_leaderboard,
-    get_ml_metrics
+    get_ml_metrics,
+    fetch_data_for_csv,
+    get_metadata_counts
 )
 
 bp = Blueprint('admin', __name__)
@@ -55,19 +57,15 @@ def get_random_unresolved_feedback_route(image_id):
     return jsonify(get_random_unresolved_feedback(image_id))
 
 
-# Set up the directory where images will be stored
 UPLOAD_FOLDER = 'images_get/uploads/'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-# Ensure the upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Helper function to check allowed file extensions
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# Route to upload a real image
 @bp.route('/admin/uploadRealImage', methods=['POST'])
 def upload_real_image():
     if 'file' not in request.files:
@@ -84,7 +82,7 @@ def upload_real_image():
         filename = secure_filename(file.filename)
         filepath = os.path.join(UPLOAD_FOLDER, 'real', filename)
         
-        # Create a subdirectory for 'real' images if it doesn't exist
+        # Create a subdirectory for real images if it doesn't exist
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         
         file.save(filepath)
@@ -95,7 +93,6 @@ def upload_real_image():
     return jsonify({'error': 'Invalid file type'}), 400
 
 
-# Route to upload an AI image
 @bp.route('/admin/uploadAIImage', methods=['POST'])
 def upload_ai_image():
     if 'file' not in request.files:
@@ -112,7 +109,7 @@ def upload_ai_image():
         filename = secure_filename(file.filename)
         filepath = os.path.join(UPLOAD_FOLDER, 'ai', filename)
         
-        # Create a subdirectory for 'ai' images if it doesn't exist
+        # Create a subdirectory for ai images if it doesn't exist
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         
         file.save(filepath)
@@ -135,7 +132,6 @@ def get_feedbacks_route():
     return jsonify(feedback_data)
 
 
-# Route to get the full record of an image based on image_id
 @bp.route('/admin/getImageById/<image_id>', methods=['GET'])
 def get_image_by_id_route(image_id):
     image_data = get_image_by_id(image_id)
@@ -165,3 +161,120 @@ def get_ml_metrics_route():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@bp.route('/admin/downloadFeedbackData', methods=['GET'])
+def download_feedback_data():
+    try:
+        if not os.path.exists('./downloads'):
+            os.makedirs('./downloads')
+
+        data = fetch_data_for_csv('feedback')
+        csv_data = convert_to_csv(data)
+        file_path = './downloads/feedback_data.csv'
+
+        with open(file_path, 'w') as file:
+            file.write(csv_data)
+
+        print("wrote the file")
+
+        return send_from_directory('downloads', 'feedback_data.csv', as_attachment=True)
+
+    except Exception as e:
+        print("exception", e)
+        return str(e), 500
+
+
+@bp.route('/admin/downloadImageData', methods=['GET'])
+def download_image_data():
+    try:
+        data = fetch_data_for_csv('images')
+        csv_data = convert_to_csv(data)
+        file_path = os.path.join('downloads', 'image_data.csv')
+
+        with open(file_path, 'w') as file:
+            file.write(csv_data)
+
+        return send_from_directory('downloads', 'image_data.csv', as_attachment=True)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route('/admin/downloadLeaderboard', methods=['GET'])
+def download_leaderboard_data():
+    try:
+        data = fetch_data_for_csv('users')
+        csv_data = convert_to_csv(data)
+        file_path = os.path.join('downloads', 'leaderboard_data.csv')
+
+        with open(file_path, 'w') as file:
+            file.write(csv_data)
+
+        return send_from_directory('downloads', 'leaderboard_data.csv', as_attachment=True)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route('/admin/downloadCompetitionData', methods=['GET'])
+def download_competition_data():
+    try:
+        data = fetch_data_for_csv('competitions')
+        csv_data = convert_to_csv(data)
+        file_path = os.path.join('downloads', 'competition_data.csv')
+
+        with open(file_path, 'w') as file:
+            file.write(csv_data)
+
+        return send_from_directory('downloads', 'competition_data.csv', as_attachment=True)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route('/admin/getMetadataCounts', methods=['GET'])
+def get_metadata_counts_route():
+    try:
+        counts = get_metadata_counts()  
+        return jsonify(counts)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route('/admin/feedbackCount', methods=['GET'])
+def feedback_count():
+    try:
+        count = get_metadata_counts().get('feedback', 0)
+        return jsonify({'count': count})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@bp.route('/admin/imageCount', methods=['GET'])
+def image_count():
+    try:
+        count = get_metadata_counts().get('image', 0)
+        return jsonify({'count': count})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@bp.route('/admin/leaderboardCount', methods=['GET'])
+def leaderboard_count():
+    try:
+        count = get_metadata_counts().get('leaderboard', 0)
+        return jsonify({'count': count})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@bp.route('/admin/competitionCount', methods=['GET'])
+def competition_count():
+    try:
+        count = get_metadata_counts().get('competition', 0)
+        return jsonify({'count': count})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def convert_to_csv(data):
+    if not data:
+        return "No data available"
+    header = data[0].keys()
+    rows = [','.join(str(value) for value in row.values()) for row in data]
+    csv_data = ','.join(header) + '\n' + '\n'.join(rows)
+    return csv_data

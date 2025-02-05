@@ -402,16 +402,58 @@ def get_image_by_id(image_id):
         result = db.session.execute(query, {"image_id": image_id})
         db.session.commit()
 
-        row = result.fetchone()  # Get a single record
+        row = result.fetchone()
         
         if row:
-            # Convert the row into a dictionary
             image_data = {column: value for column, value in zip(result.keys(), row)}
             return image_data
         else:
-            return None  # Return None if no image was found
+            return None
 
     except Exception as e:
         db.session.rollback()
         print(f"Error fetching image by id: {e}")
         return None
+
+def fetch_data_for_csv(table_name):
+    try:
+        query = text(f"SELECT * FROM {table_name}")
+        
+        result = db.session.execute(query)
+        db.session.commit()
+
+        columns = result.keys()
+
+        rows = result.fetchall()
+
+        data = [dict(zip(columns, row)) for row in rows]
+
+        return data
+
+    except Exception as e:
+        db.session.rollback()
+        raise Exception(f"Error fetching data for table {table_name}: {e}")
+
+def get_metadata_counts():
+    try:
+        queries = {
+            'feedback': "SELECT COUNT(*) FROM feedback_users",
+            'image': "SELECT COUNT(*) FROM images",
+            'leaderboard': "SELECT COUNT(*) FROM user_guesses",
+            'competition': "SELECT COUNT(*) FROM competitions" 
+        }
+
+        counts = {}
+
+
+        for table, query in queries.items():
+            result = db.session.execute(text(query))
+            db.session.commit()
+            count = result.fetchone()[0]
+            counts[table] = count
+
+        return counts
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
