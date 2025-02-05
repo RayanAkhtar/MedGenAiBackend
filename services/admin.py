@@ -51,6 +51,125 @@ def get_image_detection_accuracy():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+    
+def get_confusion_matrix():
+    try:
+        query = text("""
+            SELECT
+                SUM(CASE WHEN user_guess_type = 'real' AND image_type = 'real' THEN 1 ELSE 0 END) AS truePositive,
+                SUM(CASE WHEN user_guess_type = 'ai' AND image_type = 'real' THEN 1 ELSE 0 END) AS falsePositive,
+                SUM(CASE WHEN user_guess_type = 'real' AND image_type = 'ai' THEN 1 ELSE 0 END) AS falseNegative,
+                SUM(CASE WHEN user_guess_type = 'ai' AND image_type = 'ai' THEN 1 ELSE 0 END) AS trueNegative
+            FROM user_guesses
+            JOIN images ON user_guesses.image_id = images.image_id;
+        """)
+        result = db.session.execute(query)
+        db.session.commit()
+
+        confusion_matrix = {}
+        for row in result:
+            confusion_matrix = {column: value for column, value in zip(result.keys(), row)}
+
+        return confusion_matrix
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
+
+def get_leaderboard():
+    try:
+        query = text("""
+            SELECT 
+                user_guesses.user_id, 
+                username,
+                AVG(CASE WHEN user_guess_type = image_type THEN 1 ELSE 0 END) AS accuracy
+            FROM user_guesses
+            JOIN images ON user_guesses.image_id = images.image_id
+            JOIN users on users.user_id = user_guesses.user_id
+            GROUP BY user_guesses.user_id
+            ORDER BY accuracy DESC
+            LIMIT 10;
+        """)
+        result = db.session.execute(query)
+        db.session.commit()
+
+        leaderboard = []
+        for row in result:
+            leaderboard.append({column: value for column, value in zip(result.keys(), row)})
+
+        return leaderboard
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
+
+def get_image_difficulty():
+    try:
+        query = text("""
+            SELECT 
+                images.image_id, 
+                images.image_path,
+                COUNT(*) AS total_guesses,
+                SUM(CASE WHEN user_guess_type != images.image_type THEN 1 ELSE 0 END) AS incorrect_guesses,
+                (SUM(CASE WHEN user_guess_type != images.image_type THEN 1 ELSE 0 END) * 1.0 / COUNT(*)) AS difficulty_score
+            FROM user_guesses
+            JOIN images ON user_guesses.image_id = images.image_id
+            GROUP BY images.image_id
+            ORDER BY difficulty_score DESC;
+        """)
+        result = db.session.execute(query)
+        db.session.commit()
+
+        difficulty_data = []
+        for row in result:
+            difficulty_data.append({column: value for column, value in zip(result.keys(), row)})
+
+        return difficulty_data
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
+
+def get_ml_metrics():
+    try:
+        # Use text() to ensure that SQLAlchemy knows it's a raw SQL query
+        query = text("""
+            SELECT 
+                SUM(CASE WHEN user_guesses.user_guess_type = images.image_type AND user_guesses.user_guess_type = 'real' THEN 1 ELSE 0 END) AS true_positive,
+                SUM(CASE WHEN user_guesses.user_guess_type != images.image_type AND user_guesses.user_guess_type = 'real' THEN 1 ELSE 0 END) AS false_positive,
+                SUM(CASE WHEN user_guesses.user_guess_type = images.image_type AND user_guesses.user_guess_type = 'ai' THEN 1 ELSE 0 END) AS true_negative,
+                SUM(CASE WHEN user_guesses.user_guess_type != images.image_type AND user_guesses.user_guess_type = 'ai' THEN 1 ELSE 0 END) AS false_negative
+            FROM user_guesses
+            JOIN images ON user_guesses.image_id = images.image_id
+        """)
+
+        # Execute the query and commit the transaction
+        result = db.session.execute(query)
+        db.session.commit()
+
+        # Get the results as a dictionary
+        row = result.fetchone()
+        if not row:
+            return {"error": "No data found"}
+
+        true_positive = row[0]
+        false_positive = row[1]
+        true_negative = row[2]
+        false_negative = row[3]
+
+        # Calculate the metrics
+        accuracy = (true_positive + true_negative) / (true_positive + false_positive + true_negative + false_negative)
+        precision = true_positive / (true_positive + false_positive) if (true_positive + false_positive) != 0 else 0
+        recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) != 0 else 0
+        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
+
+        return {
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+            "f1Score": f1_score
+        }
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
 
 def get_feedback_instances():
     try:
@@ -283,16 +402,58 @@ def get_image_by_id(image_id):
         result = db.session.execute(query, {"image_id": image_id})
         db.session.commit()
 
-        row = result.fetchone()  # Get a single record
+        row = result.fetchone()
         
         if row:
-            # Convert the row into a dictionary
             image_data = {column: value for column, value in zip(result.keys(), row)}
             return image_data
         else:
-            return None  # Return None if no image was found
+            return None
 
     except Exception as e:
         db.session.rollback()
         print(f"Error fetching image by id: {e}")
         return None
+
+def fetch_data_for_csv(table_name):
+    try:
+        query = text(f"SELECT * FROM {table_name}")
+        
+        result = db.session.execute(query)
+        db.session.commit()
+
+        columns = result.keys()
+
+        rows = result.fetchall()
+
+        data = [dict(zip(columns, row)) for row in rows]
+
+        return data
+
+    except Exception as e:
+        db.session.rollback()
+        raise Exception(f"Error fetching data for table {table_name}: {e}")
+
+def get_metadata_counts():
+    try:
+        queries = {
+            'feedback': "SELECT COUNT(*) FROM feedback_users",
+            'image': "SELECT COUNT(*) FROM images",
+            'leaderboard': "SELECT COUNT(*) FROM user_guesses",
+            'competition': "SELECT COUNT(*) FROM competitions" 
+        }
+
+        counts = {}
+
+
+        for table, query in queries.items():
+            result = db.session.execute(text(query))
+            db.session.commit()
+            count = result.fetchone()[0]
+            counts[table] = count
+
+        return counts
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}

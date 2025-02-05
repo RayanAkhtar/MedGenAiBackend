@@ -53,12 +53,9 @@ def get_image_by_id_or_path(image_id=None, image_path=None):
             return jsonify({'error': 'No image ID or path provided'}), 400
 
         # Ensure the image exists
-        print("image_file", image_file)
         if os.path.exists(image_file):
-            print("aaaaa")
             return send_from_directory(os.path.dirname(image_file), os.path.basename(image_file))
         else:
-            print("bbbbb")
             return jsonify({'error': 'Image not found'}), 404
 
     except Exception as e:
