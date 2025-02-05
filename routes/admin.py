@@ -12,7 +12,11 @@ from services.admin import (
     get_matching_feedback_for_image,
     get_random_unresolved_feedback,
     get_feedback_with_filters,
-    get_image_by_id
+    get_image_by_id,
+    get_confusion_matrix,
+    get_image_difficulty,
+    get_leaderboard,
+    get_ml_metrics
 )
 
 bp = Blueprint('admin', __name__)
@@ -139,3 +143,25 @@ def get_image_by_id_route(image_id):
         return jsonify(image_data), 200
     else:
         return jsonify({"error": "Image not found"}), 404
+
+
+@bp.route('/admin/getConfusionMatrix', methods=['GET'])
+def get_confusion_matrix_route():
+    return jsonify(get_confusion_matrix())
+
+@bp.route('/admin/getLeaderboard', methods=['GET'])
+def get_leaderboard_route():
+    return jsonify(get_leaderboard())
+
+@bp.route('/admin/getImageDifficulty', methods=['GET'])
+def get_image_difficulty_route():
+    return jsonify(get_image_difficulty())
+
+@bp.route('/admin/getMLMetrics', methods=['GET'])
+def get_ml_metrics_route():
+    try:
+        ml_metrics = get_ml_metrics()
+        return jsonify(ml_metrics), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
