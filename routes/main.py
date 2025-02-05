@@ -11,7 +11,7 @@ from models import *
 def hello():
     return jsonify(message="Hello, world!"), 200
 
-@bp.route('/execute_sql', methods=['POST'])
+@bp.route('/execute_sql', methods=['POST', 'GET'])
 def execute_sql():
     try:
         json_data = request.get_json()
