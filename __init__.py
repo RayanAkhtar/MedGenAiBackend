@@ -1,7 +1,10 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 db = SQLAlchemy()
 cors = CORS()
@@ -10,7 +13,7 @@ def create_app(test_config=None):
     app = Flask(__name__)
     
     # Configure the app
-    uri = os.environ.get('DATABASE_URL', 'sqlite:///medgen.db')
+    uri = os.environ.get('DATABASE_URL', 'postgresql://default_user:default_password@localhost/medgen')
     if uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
 
@@ -19,7 +22,6 @@ def create_app(test_config=None):
         SQLALCHEMY_DATABASE_URI=uri,
         SQLALCHEMY_TRACK_MODIFICATIONS=False
     )
-
     if test_config is not None:
         app.config.update(test_config)
 
@@ -35,9 +37,6 @@ def create_app(test_config=None):
         app.register_blueprint(bp)
         app.register_blueprint(profile_bp)
         app.register_blueprint(image_bp)
-        
-        # Create database tables
-        db.create_all()
 
     print(app.url_map)
     return app 
