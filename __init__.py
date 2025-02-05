@@ -45,9 +45,5 @@ def create_app(test_config=None):
         app.register_blueprint(game_bp, url_prefix='/game')
         app.register_blueprint(auth_bp)
 
-        # Create database tables
-        db.create_all()
-
-
     print(app.url_map)
     return app 
