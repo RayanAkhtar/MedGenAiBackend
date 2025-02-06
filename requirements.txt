@@ -9,3 +9,4 @@ requests~=2.32.3
 firebase-admin==6.4.0
 python-dotenv==1.0.1
 psycopg2-binary==2.9.9
+flask-migrate==4.0.4
