@@ -1,5 +1,7 @@
 import os
 from flask import request
+from models import Images
+from sqlalchemy.sql.expression import func
 
 # Dynamically construct the path to the Images directory
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../MedGenAI-Images/Images"))
@@ -38,3 +40,7 @@ def get_image_url(image_name):
             # Generate the full URL dynamically
             return f"{request.host_url}api/images/view/{relative_path.replace(os.sep, '/')}"
     return None
+
+def get_images_rand(count, type):
+  images = Images.query.filter_by(image_type=type).order_by(func.random()).limit(count).all()
+  return [f"{request.host_url}api/images/view/{img.image_path}" for img in images]
