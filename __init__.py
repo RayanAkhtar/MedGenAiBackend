@@ -2,12 +2,14 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
+from flask_migrate import Migrate
 import os
 
 load_dotenv()
 
 db = SQLAlchemy()
 cors = CORS()
+migrate = Migrate()
 
 def create_app(test_config=None):
     app = Flask(__name__)
@@ -27,6 +29,7 @@ def create_app(test_config=None):
 
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     cors.init_app(app)
 
     with app.app_context():
