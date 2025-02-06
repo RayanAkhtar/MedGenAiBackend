@@ -21,7 +21,7 @@ def initialize_game():
         print(f"Game type: {game_type}")
         print(f"Image count: {image_count}")
         # Ensure user exists in database
-        user = Users.query.filter_by(firebase_uid=user_id).first()
+        user = Users.query.filter_by(user_id=user_id).first()
       
         if not user:
             return jsonify({

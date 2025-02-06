@@ -6,25 +6,25 @@ from middleware.auth import require_auth
 auth_signup_bp = Blueprint('auth_signup', __name__)
 
 @auth_signup_bp.route('/auth/register', methods=['POST'])
-@require_auth  # This ensures we have a valid Firebase token
+@require_auth
 def register_user():
     try:
         # Get user data from request
         data = request.get_json()
-        firebase_uid = request.user_id  # This comes from the @require_auth decorator
+        firebase_uid = request.user_id  # This is the Firebase UID from the token
         username = data.get('username')
 
         # Check if user already exists
-        existing_user = Users.query.filter_by(firebase_uid=firebase_uid).first()
+        existing_user = Users.query.filter_by(user_id=firebase_uid).first()
         if existing_user:
             return jsonify({
                 'error': 'User already exists',
                 'userId': existing_user.user_id
             }), 409
 
-        # Create new user
+        # Create new user using Firebase UID as the user_id
         new_user = Users(
-            firebase_uid=firebase_uid,
+            user_id=firebase_uid,     # Using Firebase UID directly as user_id
             username=username,
             level=1,
             exp=0,
