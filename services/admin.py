@@ -263,14 +263,15 @@ def get_matching_feedback_for_image(image_id):
     try:
         query = text(f"""
             SELECT 
-                feedback_users.guess_id, 
-                feedback_users.msg, 
-                feedback_users.x AS x, 
-                feedback_users.y AS y
-            FROM feedback_users
+                feedback.feedback_id, 
+                feedback.msg, 
+                feedback.x AS x, 
+                feedback.y AS y
+            FROM feedback
+            JOIN feedback_users ON feedback_users.feedback_id = feedback.feedback_id
             JOIN user_guesses ON feedback_users.guess_id = user_guesses.guess_id
-            JOIN images ON user_guesses.image_id = images.image_path
-            WHERE user_guesses.image_id = '{image_id}'
+            JOIN images ON user_guesses.image_id = images.image_id
+            WHERE user_guesses.image_id = {image_id}
             AND user_guesses.user_guess_type = images.image_type;
         """)
         result = db.session.execute(query)
