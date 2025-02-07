@@ -7,13 +7,13 @@ from datetime import datetime
 def get_guesses_per_month():
     try:
         query = text("""
-            SELECT 
-                strftime('%Y-%m', date_of_guess) AS month,
-                COUNT(*) AS guessCount
-            FROM user_guesses
-            WHERE date_of_guess >= date('now', '-12 months')
-            GROUP BY month
-            ORDER BY month;
+SELECT 
+    TO_CHAR(date_of_guess, 'YYYY-MM') AS month,
+    COUNT(*) AS guess_count
+FROM user_guesses
+WHERE date_of_guess >= NOW() - INTERVAL '12 months'
+GROUP BY month
+ORDER BY month;
         """)
         result = db.session.execute(query)
         db.session.commit()
@@ -31,13 +31,13 @@ def get_guesses_per_month():
 def get_image_detection_accuracy():
     try:
         query = text("""
-            SELECT 
-                strftime('%Y-%m', date_of_guess) AS month,
-                SUM(CASE WHEN user_guess_type = (SELECT image_type FROM images WHERE images.image_id = user_guesses.image_id) THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS accuracy
-            FROM user_guesses
-            WHERE date_of_guess >= date('now', '-12 months')
-            GROUP BY month
-            ORDER BY month;
+SELECT 
+    TO_CHAR(date_of_guess, 'YYYY-MM') AS month,
+    SUM(CASE WHEN user_guess_type = (SELECT image_type FROM images WHERE images.image_id = user_guesses.image_id) THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS accuracy
+FROM user_guesses
+WHERE date_of_guess >= NOW() - INTERVAL '12 months'
+GROUP BY month
+ORDER BY month;
         """)
         result = db.session.execute(query)
         db.session.commit()
