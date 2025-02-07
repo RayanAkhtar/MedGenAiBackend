@@ -78,16 +78,16 @@ def get_confusion_matrix():
 def get_leaderboard():
     try:
         query = text("""
-            SELECT 
-                user_guesses.user_id, 
-                username,
-                AVG(CASE WHEN user_guess_type = image_type THEN 1 ELSE 0 END) AS accuracy
-            FROM user_guesses
-            JOIN images ON user_guesses.image_id = images.image_id
-            JOIN users on users.user_id = user_guesses.user_id
-            GROUP BY user_guesses.user_id
-            ORDER BY accuracy DESC
-            LIMIT 10;
+SELECT 
+    user_guesses.user_id, 
+    username,
+    AVG(CASE WHEN user_guess_type = image_type THEN 1 ELSE 0 END) AS accuracy
+FROM user_guesses
+JOIN images ON user_guesses.image_id = images.image_id
+JOIN users ON users.user_id = user_guesses.user_id
+GROUP BY user_guesses.user_id, users.username
+ORDER BY accuracy DESC
+LIMIT 10;
         """)
         result = db.session.execute(query)
         db.session.commit()
