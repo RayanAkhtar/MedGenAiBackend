@@ -243,7 +243,7 @@ def get_feedback_resolution_status():
         query = text("""
             SELECT 
                 SUM(CASE WHEN resolved IS TRUE THEN 1 ELSE 0 END) AS resolvedCount,
-                SUM(CASE WHEN resolved IS TRUE THEN 1 ELSE 0 END) AS unresolvedCount
+                SUM(CASE WHEN resolved IS FALSE THEN 1 ELSE 0 END) AS unresolvedCount
             FROM feedback;
         """)
         result = db.session.execute(query)
