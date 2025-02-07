@@ -197,11 +197,11 @@ def get_feedback_instances():
 def get_total_real_images():
     try:
         query = text("""
-            SELECT 
-                COUNT(*) AS totalReal,
-                SUM(CASE WHEN (SELECT user_guess_type FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
-            FROM images
-            WHERE image_type = 'real';
+SELECT 
+    COUNT(*) AS totalReal,
+    SUM(CASE WHEN (SELECT MAX(user_guess_type) FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
+FROM images
+WHERE image_type = 'real';
         """)
         result = db.session.execute(query)
         db.session.commit()
@@ -219,11 +219,11 @@ def get_total_real_images():
 def get_total_ai_images():
     try:
         query = text("""
-            SELECT 
-                COUNT(*) AS totalAI,
-                SUM(CASE WHEN (SELECT user_guess_type FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
-            FROM images
-            WHERE image_type = 'ai';
+SELECT 
+    COUNT(*) AS totalAI,
+    SUM(CASE WHEN (SELECT MAX(user_guess_type) FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
+FROM images
+WHERE image_type = 'ai';
         """)
         result = db.session.execute(query)
         db.session.commit()
