@@ -242,8 +242,8 @@ def get_feedback_resolution_status():
     try:
         query = text("""
             SELECT 
-                SUM(CASE WHEN resolved = 1 THEN 1 ELSE 0 END) AS resolvedCount,
-                SUM(CASE WHEN resolved = 0 THEN 1 ELSE 0 END) AS unresolvedCount
+                SUM(CASE WHEN resolved IS TRUE THEN 1 ELSE 0 END) AS resolvedCount,
+                SUM(CASE WHEN resolved IS TRUE THEN 1 ELSE 0 END) AS unresolvedCount
             FROM feedback;
         """)
         result = db.session.execute(query)
@@ -295,7 +295,7 @@ def get_random_unresolved_feedback(image_id):
             JOIN user_guesses ON feedback_users.guess_id = user_guesses.guess_id
             JOIN feedback ON feedback_users.guess_id = feedback.feedback_id
             WHERE user_guesses.image_id = '{image_id}'
-            AND feedback.resolved = 0
+            AND feedback.resolved IS FALSE
             ORDER BY RANDOM()
             LIMIT 1;
         """)
@@ -321,7 +321,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
                 images.image_id,
                 images.image_path,
                 images.image_type,
-                COUNT(CASE WHEN feedback.resolved = 0 THEN 1 END) AS unresolved_count,
+                COUNT(CASE WHEN feedback.resolved IS FALSE THEN 1 END) AS unresolved_count,
                 MAX(feedback.date_added) AS last_feedback_time,
                 images.upload_time
             FROM images
@@ -335,7 +335,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
             query_str += " AND images.image_type = :image_type"
 
         if resolved is not None:
-            query_str += " AND feedback.resolved = :resolved"
+            query_str += " AND feedback.resolved IS :resolved"
 
         if sort_by:
             valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
