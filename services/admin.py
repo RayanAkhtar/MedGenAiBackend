@@ -336,7 +336,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
 
 
         if resolved is not None:
-            query_str += f" AND feedback.resolved IS {"true" if resolved else "false"}"
+            query_str += f" AND feedback.resolved IS {'true' if resolved else 'false'}"
 
 
         query_str += """
