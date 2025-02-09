@@ -313,8 +313,9 @@ def get_random_unresolved_feedback(image_id):
         return {"error": str(e)}
 
 
-def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
+def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, limit=20, offset=0):
     try:
+        # Start the query string
         query_str = """
             SELECT 
                 images.image_id,
@@ -331,23 +332,26 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
             WHERE 1=1
         """
 
+        # Apply filters for image_type if provided
         if image_type and image_type != "all":
             query_str += " AND images.image_type = :image_type"
 
-
+        # Apply resolved filter if provided
         if resolved is not None:
             query_str += f" AND feedback.resolved IS {'true' if resolved else 'false'}"
 
-
+        # Group by image properties
         query_str += """
             GROUP BY images.image_id, images.image_path, images.image_type, images.upload_time
         """
 
-        if resolved == False:
+        # Apply HAVING clause if resolved is False
+        if resolved is False:
             query_str += """
                 HAVING COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) > 0
             """
 
+        # Apply sorting based on sort_by field
         valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
         if sort_by:
             if sort_by in valid_sort_fields:
@@ -357,15 +361,26 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
             else:
                 raise ValueError("Invalid sort field provided.")
 
-        query = text(query_str)
-        params = {}
+        # Add LIMIT and OFFSET for pagination
+        query_str += f" LIMIT :limit OFFSET :offset"
+
+        # Prepare parameters for query execution
+        params = {
+            'limit': limit,
+            'offset': offset
+        }
+
+        # If image_type filter is provided, add to params
         if image_type:
             params['image_type'] = image_type
         if resolved is not None:
             params['resolved'] = resolved
 
+        # Execute the query
+        query = text(query_str)
         result = db.session.execute(query, params)
 
+        # Process and format the results
         feedback_data = []
         for row in result.mappings():
             feedback_data.append({
@@ -383,10 +398,12 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
                 ),
             })
 
-        return feedback_data[0:20]
+        return feedback_data
+
     except Exception as e:
         print(f"Error fetching feedback: {e}")
         return []
+
 
     
 

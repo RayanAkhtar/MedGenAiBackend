@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, flash, send_from_directory
 import os
+from math import ceil
 from werkzeug.utils import secure_filename
 from __init__ import db
 from services.admin import (
@@ -126,10 +127,23 @@ def get_feedbacks_route():
     resolved = request.args.get('resolved')
     sort_by = request.args.get('sort_by')
 
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 20, type=int)  # 20 items per page by default
     resolved = True if resolved == 'true' else (False if resolved == 'false' else None)
 
-    feedback_data = get_feedback_with_filters(image_type=image_type, resolved=resolved, sort_by=sort_by)
-    return jsonify(feedback_data)
+    feedback_data, total_feedback_count = get_feedback_with_filters(
+        image_type=image_type, resolved=resolved, sort_by=sort_by, 
+        limit=limit, offset=(page - 1) * limit
+    )
+    
+    total_pages = ceil(total_feedback_count / limit)
+    response_data = {
+        'feedback': feedback_data,
+        'total': total_feedback_count,
+        'total_pages': total_pages
+    }
+
+    return jsonify(response_data)
 
 
 @bp.route('/admin/getImageById/<image_id>', methods=['GET'])
