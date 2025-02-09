@@ -336,16 +336,14 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
 
 
         if resolved is not None:
-            if resolved:
-                query_str += " AND feedback.resolved IS true"
-            else:
-                query_str += " AND feedback.resolved IS false"
+            query_str += f" AND feedback.resolved IS {"true" if resolved else "false"}"
+
 
         query_str += """
             GROUP BY images.image_id, images.image_path, images.image_type, images.upload_time
         """
 
-        if not resolved:
+        if resolved == False:
             query_str += """
                 HAVING COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) > 0
             """
