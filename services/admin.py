@@ -403,6 +403,37 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, limi
         print(f"Error fetching feedback: {e}")
         return []
 
+def get_feedback_count(image_type=None, resolved=None):
+    try:
+        count_query_str = """
+            SELECT COUNT(DISTINCT images.image_id) 
+            FROM images
+            LEFT JOIN user_guesses ON user_guesses.image_id = images.image_id
+            LEFT JOIN feedback_users ON feedback_users.guess_id = user_guesses.guess_id
+            LEFT JOIN feedback ON feedback.feedback_id = feedback_users.feedback_id
+            WHERE 1=1
+        """
+
+        if image_type and image_type != "all":
+            count_query_str += " AND images.image_type = :image_type"
+
+        if resolved is not None:
+            count_query_str += f" AND feedback.resolved IS {'true' if resolved else 'false'}"
+
+        count_query = text(count_query_str)
+        params = {
+            'image_type': image_type,
+            'resolved': resolved
+        }
+        count_result = db.session.execute(count_query, params)
+
+        total_count = count_result.scalar()
+
+        return total_count
+
+    except Exception as e:
+        print(f"Error fetching feedback count: {e}")
+        return 0
 
     
 

@@ -19,7 +19,8 @@ from services.admin import (
     get_leaderboard,
     get_ml_metrics,
     fetch_data_for_csv,
-    get_metadata_counts
+    get_metadata_counts,
+    get_feedback_count
 )
 
 bp = Blueprint('admin', __name__)
@@ -131,19 +132,22 @@ def get_feedbacks_route():
     limit = request.args.get('limit', 20, type=int)  # 20 items per page by default
     resolved = True if resolved == 'true' else (False if resolved == 'false' else None)
 
-    feedback_data, total_feedback_count = get_feedback_with_filters(
+    feedback_data = get_feedback_with_filters(
         image_type=image_type, resolved=resolved, sort_by=sort_by, 
         limit=limit, offset=(page - 1) * limit
     )
-    
-    total_pages = ceil(total_feedback_count / limit)
-    response_data = {
-        'feedback': feedback_data,
-        'total': total_feedback_count,
-        'total_pages': total_pages
-    }
 
-    return jsonify(response_data)
+    return jsonify(feedback_data)
+
+@bp.route('/admin/getFeedbackCount', methods=['GET'])
+def get_feedback_count_route():
+    image_type = request.args.get('image_type')
+    resolved = request.args.get('resolved')
+
+    resolved = True if resolved == 'true' else (False if resolved == 'false' else None)
+    total_count = get_feedback_count(image_type=image_type, resolved=resolved)
+
+    return jsonify({'total_count': total_count})
 
 
 @bp.route('/admin/getImageById/<image_id>', methods=['GET'])
