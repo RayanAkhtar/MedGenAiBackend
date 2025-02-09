@@ -356,6 +356,8 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
 
         result = db.session.execute(query, params)
 
+        print("result:", result)
+
         feedback_data = []
         for row in result.mappings(): 
             last_feedback_time = row['last_feedback_time']
