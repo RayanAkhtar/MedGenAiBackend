@@ -313,7 +313,6 @@ def get_random_unresolved_feedback(image_id):
         return {"error": str(e)}
 
 
-
 def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
     try:
         query_str = """
@@ -331,23 +330,26 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
             WHERE 1=1
         """
 
-        if image_type != "all":
+        if image_type and image_type != "all":
             query_str += " AND images.image_type = :image_type"
 
         if resolved is not None:
-            query_str += " AND feedback.resolved IS :resolved"
+            query_str += " AND feedback.resolved IS NOT DISTINCT FROM :resolved"
 
+        query_str += """
+            GROUP BY images.image_id, images.image_path, images.image_type, images.upload_time
+        """
+
+        valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
         if sort_by:
-            valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
-            if sort_by == "image_id":
-                query_str += "ORDER BY images.image_id"  # Resolves ambiguous image_id reference
-            elif sort_by in valid_sort_fields:
+            if sort_by in valid_sort_fields:
                 query_str += f" ORDER BY {sort_by}"
+            elif sort_by == "image_id":
+                query_str += " ORDER BY images.image_id"
             else:
                 raise ValueError("Invalid sort field provided.")
 
         query = text(query_str)
-
         params = {}
         if image_type:
             params['image_type'] = image_type
@@ -356,39 +358,28 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
 
         result = db.session.execute(query, params)
 
-        print("result:", result)
-
         feedback_data = []
-        for row in result.mappings(): 
-            last_feedback_time = row['last_feedback_time']
-            if isinstance(last_feedback_time, str):
-                last_feedback_time = last_feedback_time 
-            elif isinstance(last_feedback_time, datetime): 
-                last_feedback_time = last_feedback_time.strftime('%Y-%m-%d')
-            else:
-                last_feedback_time = None
-
-            upload_time = row['upload_time']
-            if isinstance(upload_time, str):
-                upload_time = upload_time 
-            elif isinstance(upload_time, datetime):
-                upload_time = upload_time.strftime('%Y-%m-%d')
-            else:
-                upload_time = None
-
+        for row in result.mappings():
             feedback_data.append({
                 'image_id': row['image_id'],
                 'image_path': row['image_path'],
                 'image_type': row['image_type'],
                 'unresolved_count': row['unresolved_count'],
-                'last_feedback_time': last_feedback_time,
-                'upload_time': upload_time
+                'last_feedback_time': (
+                    row['last_feedback_time'].strftime('%Y-%m-%d')
+                    if isinstance(row['last_feedback_time'], datetime.datetime) else row['last_feedback_time']
+                ),
+                'upload_time': (
+                    row['upload_time'].strftime('%Y-%m-%d')
+                    if isinstance(row['upload_time'], datetime.datetime) else row['upload_time']
+                ),
             })
 
-        return feedback_data 
+        return feedback_data
     except Exception as e:
         print(f"Error fetching feedback: {e}")
         return []
+
     
 
 def get_image_by_id(image_id):
