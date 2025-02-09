@@ -336,11 +336,6 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, limi
         if image_type and image_type != "all":
             query_str += " AND images.image_type = :image_type"
 
-        # Apply resolved filter if provided
-        if resolved is not None:
-            query_str += f" AND feedback.resolved IS {'true' if resolved else 'false'}"
-
-        # Group by image properties
         query_str += """
             GROUP BY images.image_id, images.image_path, images.image_type, images.upload_time
         """
@@ -350,6 +345,10 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, limi
             query_str += """
                 HAVING COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) > 0
             """
+        if resolved:
+            query_str += """
+                HAVING COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) = 0
+"""
 
         # Apply sorting based on sort_by field
         valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
