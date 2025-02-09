@@ -43,10 +43,9 @@ VALUES
         """
         INSERT INTO images (image_id, image_path, image_type, upload_time)
         VALUES 
-            (111111, '/images_get/static/images/real/1_cf_Pleural_Effusion.jpg', 'ai', '2023-03-17'),
-            (111112, '/images_get/static/images/real/2_cf_Pleural_Effusion.jpg', 'real', '2023-03-17'),
-            (111113, '/images_get/static/images/real/3_cf_Pleural_Effusion.jpg', 'ai', '2023-03-17'),
-            (111114, '/images_get/static/images/real/4_cf_Pleural_Effusion.jpg', 'real', '2023-03-17');
+            (111111, '/test_images/fake_1.jpg', 'ai', '2023-03-17'),
+            (111112, '/test_images/fake_2.jpg', 'real', '2023-03-17'),
+            (111113, '/test_images/fake_3.jpg', 'ai', '2023-03-17');
         """,
 
         # User Guesses
@@ -80,21 +79,21 @@ VALUES
         """
         INSERT INTO feedback (feedback_id, x, y, msg, resolved, date_added)
         VALUES 
-            (1, 0, 1, 'Great image quality', TRUE, '2023-04-21'),
-            (2, 1, 0, 'Background needs work', False, '2023-04-21'),
-            (3, 2, 3, 'Perfect edge detection', TRUE, '2023-04-21'),
-            (4, 3, 4, 'Blurry in corners', False, '2023-04-21'),
-            (5, 4, 5, 'Noise in shadow areas', TRUE, '2023-04-21'),
-            (6, 0, 2, 'Too dark in some areas', False, '2023-04-21'),
-            (7, 1, 4, 'Excellent contrast and detail', TRUE, '2023-04-21'),
-            (8, 2, 1, 'The lighting is too harsh on the subject', False, '2023-04-21'),
-            (9, 3, 5, 'The colors are off in the shadows', TRUE, '2023-04-21'),
-            (10, 4, 2, 'The focus seems soft in the middle', False, '2023-04-21'),
-            (11, 5, 1, 'Great use of depth of field', TRUE, '2023-04-21'),
-            (12, 6, 3, 'The image appears overexposed', False, '2023-04-21'),
-            (13, 0, 4, 'Lack of clarity in details', TRUE, '2023-04-21'),
-            (14, 2, 2, 'Background feels too cluttered', False, '2023-04-21'),
-            (15, 1, 5, 'Nice composition and symmetry', TRUE, '2023-04-21');
+            (1, 0, 1, 'Great image quality', false, '2023-04-21'),
+            (2, 1, 0, 'Background needs work', false, '2023-04-21'),
+            (3, 2, 3, 'Perfect edge detection', false, '2023-04-21'),
+            (4, 3, 4, 'Blurry in corners', false, '2023-04-21'),
+            (5, 4, 5, 'Noise in shadow areas', false, '2023-04-21'),
+            (6, 0, 2, 'Too dark in some areas', false, '2023-04-21'),
+            (7, 1, 4, 'Excellent contrast and detail', false, '2023-04-21'),
+            (8, 2, 1, 'The lighting is too harsh on the subject', false, '2023-04-21'),
+            (9, 3, 5, 'The colors are off in the shadows', false, '2023-04-21'),
+            (10, 4, 2, 'The focus seems soft in the middle', false, '2023-04-21'),
+            (11, 5, 1, 'Great use of depth of field', true, '2023-04-21'),
+            (12, 6, 3, 'The image appears overexposed', false, '2023-04-21'),
+            (13, 0, 4, 'Lack of clarity in details', true, '2023-04-21'),
+            (14, 2, 2, 'Background feels too cluttered', false, '2023-04-21'),
+            (15, 1, 5, 'Nice composition and symmetry', true, '2023-04-21');
         """,
 
         # Feedback Users
