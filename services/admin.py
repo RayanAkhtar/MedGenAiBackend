@@ -367,11 +367,11 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
                 'unresolved_count': row['unresolved_count'],
                 'last_feedback_time': (
                     row['last_feedback_time'].strftime('%Y-%m-%d')
-                    if isinstance(row['last_feedback_time'], datetime.datetime) else row['last_feedback_time']
+                    if isinstance(row['last_feedback_time'], datetime) else row['last_feedback_time']
                 ),
                 'upload_time': (
                     row['upload_time'].strftime('%Y-%m-%d')
-                    if isinstance(row['upload_time'], datetime.datetime) else row['upload_time']
+                    if isinstance(row['upload_time'], datetime) else row['upload_time']
                 ),
             })
 
