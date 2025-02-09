@@ -320,25 +320,35 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
                 images.image_id,
                 images.image_path,
                 images.image_type,
-                COUNT(CASE WHEN feedback.resolved IS FALSE THEN 1 END) AS unresolved_count,
+                COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) AS unresolved_count,
                 MAX(feedback.date_added) AS last_feedback_time,
                 images.upload_time
             FROM images
             LEFT JOIN user_guesses ON user_guesses.image_id = images.image_id
             LEFT JOIN feedback_users ON feedback_users.guess_id = user_guesses.guess_id
             LEFT JOIN feedback ON feedback.feedback_id = feedback_users.feedback_id
+
             WHERE 1=1
         """
 
         if image_type and image_type != "all":
             query_str += " AND images.image_type = :image_type"
 
+
         if resolved is not None:
-            query_str += " AND feedback.resolved IS NOT DISTINCT FROM :resolved"
+            if resolved:
+                query_str += " AND feedback.resolved IS true"
+            else:
+                query_str += " AND feedback.resolved IS false"
 
         query_str += """
             GROUP BY images.image_id, images.image_path, images.image_type, images.upload_time
         """
+
+        if not resolved:
+            query_str += """
+                HAVING COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) > 0
+            """
 
         valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
         if sort_by:
@@ -375,7 +385,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
                 ),
             })
 
-        return feedback_data
+        return feedback_data[0:20]
     except Exception as e:
         print(f"Error fetching feedback: {e}")
         return []
