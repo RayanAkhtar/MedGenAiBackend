@@ -28,7 +28,8 @@ def setup_images():
             if any(file_name.lower().endswith(ext) for ext in SUPPORTED_IMAGE_EXTENSIONS):
                 relative_path = os.path.relpath(root, IMAGE_DIRECTORY)
                 db_image_path = f"/{relative_path}/{file_name}".replace("\\", "/")
-                image_type = "ai" if "ai" in file_name.lower() else "real"
+                image_type = "ai" if "ai" in relative_path.startswith("real_images") else "real"
+                print("relative path is", relative_path)
                 upload_time = "CURRENT_DATE"
 
                 image_data.append((db_image_path, image_type, upload_time))
