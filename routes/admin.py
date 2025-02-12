@@ -193,8 +193,15 @@ def get_image_ml_metrics(image_id):
         TN = confusion_matrix.get('truenegative', 0)
         print("confusion matrix is", confusion_matrix)
         accuracy = (TP + TN) / (TP + FP + FN + TN) if (TP + FP + FN + TN) > 0 else 0
-        precision = TP / (TP + FP) if (TP + FP) > 0 else TN / (TN + FN) if (TN + FN) > 0 else 0
-        recall = TP / (TP + FN) if (TP + FN) > 0 else TN / (TN + FP) if (TN + FP) > 0 else 0
+        
+        precision = TP / (TP + FP) if (TP + FP) > 0 else 0
+        precision_rev = TN / (TN + FN) if (TN + FN) > 0 else 0
+        precision = max(precision, precision_rev)
+        
+        recall = TP / (TP + FN) if (TP + FN) > 0 else 0
+        recall_rec = TN / (TN + FP) if (TN + FP) > 0 else 0
+        recall = max(recall, recall_rec)
+
         f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
 
         metrics = {
