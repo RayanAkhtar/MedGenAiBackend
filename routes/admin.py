@@ -15,6 +15,7 @@ from services.admin import (
     get_feedback_with_filters,
     get_image_by_id,
     get_confusion_matrix,
+    get_image_confusion_matrix,
     get_image_difficulty,
     get_leaderboard,
     get_ml_metrics,
@@ -176,6 +177,36 @@ def get_ml_metrics_route():
     try:
         ml_metrics = get_ml_metrics()
         return jsonify(ml_metrics), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+@bp.route('/admin/getImageMlMetrics/<image_id>', methods=['GET'])
+def get_image_ml_metrics(image_id):
+    try:
+        confusion_matrix = get_image_confusion_matrix(image_id)
+
+        TP = confusion_matrix.get('TP', 0)
+        FP = confusion_matrix.get('FP', 0)
+        FN = confusion_matrix.get('FN', 0)
+        TN = confusion_matrix.get('TN', 0)
+
+        accuracy = (TP + TN) / (TP + FP + FN + TN) if (TP + FP + FN + TN) > 0 else 0
+        precision = TP / (TP + FP) if (TP + FP) > 0 else 0
+        recall = TP / (TP + FN) if (TP + FN) > 0 else 0
+        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+
+        metrics = {
+            'confusionMatrix': confusion_matrix,
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1Score': f1_score,
+        }
+
+        return jsonify(metrics), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

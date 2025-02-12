@@ -74,6 +74,35 @@ def get_confusion_matrix():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+    
+    
+def get_image_confusion_matrix(image_id):
+    try:
+        query = text(f"""
+            SELECT
+                SUM(CASE WHEN user_guesses.user_guess_type = 'real' AND images.image_type = 'real' THEN 1 ELSE 0 END) AS truePositive,
+                SUM(CASE WHEN user_guesses.user_guess_type = 'ai' AND images.image_type = 'real' THEN 1 ELSE 0 END) AS falsePositive,
+                SUM(CASE WHEN user_guesses.user_guess_type = 'real' AND images.image_type = 'ai' THEN 1 ELSE 0 END) AS falseNegative,
+                SUM(CASE WHEN user_guesses.user_guess_type = 'ai' AND images.image_type = 'ai' THEN 1 ELSE 0 END) AS trueNegative
+            FROM user_guesses
+            JOIN images ON user_guesses.image_id = images.image_id
+            WHERE images.image_id = {image_id}
+        """)
+        
+        result = db.session.execute(query)
+        db.session.commit()
+
+        confusion_matrix = {}
+        
+        for row in result:
+            confusion_matrix = {column: value for column, value in zip(result.keys(), row)}
+
+        return confusion_matrix
+    
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
+
 
 def get_leaderboard():
     try:
