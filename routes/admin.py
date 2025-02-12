@@ -189,7 +189,7 @@ def get_image_ml_metrics(image_id):
 
         TP = confusion_matrix.get('truepositive', 0)
         FP = confusion_matrix.get('falsepositive', 0)
-        FN = confusion_matrix.get('falsnegative', 0)
+        FN = confusion_matrix.get('falsenegative', 0)
         TN = confusion_matrix.get('truenegative', 0)
         print("confusion matrix is", confusion_matrix)
         accuracy = (TP + TN) / (TP + FP + FN + TN) if (TP + FP + FN + TN) > 0 else 0
