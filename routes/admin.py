@@ -194,7 +194,7 @@ def get_image_ml_metrics(image_id):
         print("confusion matrix is", confusion_matrix)
         accuracy = (TP + TN) / (TP + FP + FN + TN) if (TP + FP + FN + TN) > 0 else 0
         precision = TP / (TP + FP) if (TP + FP) > 0 else TN / (TN + FN) if (TN + FN) > 0 else 0
-        recall = TP / (TP + FN) if (TP + FN) > 0 else TN / (TN + FP) if (TN + FP) > 0
+        recall = TP / (TP + FN) if (TP + FN) > 0 else TN / (TN + FP) if (TN + FP) > 0 else 0
         f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
 
         metrics = {
