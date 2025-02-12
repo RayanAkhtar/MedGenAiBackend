@@ -25,8 +25,7 @@ class CompetitionUser(db.Model):
 class Users(db.Model):
     __tablename__ = 'users'
 
-    user_id = db.Column(db.Integer, primary_key=True)
-    firebase_uid = db.Column(db.String(128), unique=True, nullable=False)
+    user_id = db.Column(db.String(128), primary_key=True)
     username = db.Column(db.String(100), nullable=False, unique=True)
     level = db.Column(db.Integer, nullable=False, default=1)
     exp = db.Column(db.Integer, nullable=False, default=0)

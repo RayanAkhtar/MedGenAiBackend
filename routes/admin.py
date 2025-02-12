@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, flash, send_from_directory
 import os
+from math import ceil
 from werkzeug.utils import secure_filename
 from __init__ import db
 from services.admin import (
@@ -18,7 +19,8 @@ from services.admin import (
     get_leaderboard,
     get_ml_metrics,
     fetch_data_for_csv,
-    get_metadata_counts
+    get_metadata_counts,
+    get_feedback_count
 )
 
 bp = Blueprint('admin', __name__)
@@ -126,10 +128,26 @@ def get_feedbacks_route():
     resolved = request.args.get('resolved')
     sort_by = request.args.get('sort_by')
 
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 20, type=int)  # 20 items per page by default
     resolved = True if resolved == 'true' else (False if resolved == 'false' else None)
 
-    feedback_data = get_feedback_with_filters(image_type=image_type, resolved=resolved, sort_by=sort_by)
+    feedback_data = get_feedback_with_filters(
+        image_type=image_type, resolved=resolved, sort_by=sort_by, 
+        limit=limit, offset=(page - 1) * limit
+    )
+
     return jsonify(feedback_data)
+
+@bp.route('/admin/getFeedbackCount', methods=['GET'])
+def get_feedback_count_route():
+    image_type = request.args.get('image_type')
+    resolved = request.args.get('resolved')
+
+    resolved = True if resolved == 'true' else (False if resolved == 'false' else None)
+    total_count = get_feedback_count(image_type=image_type, resolved=resolved)
+
+    return jsonify({'total_count': total_count})
 
 
 @bp.route('/admin/getImageById/<image_id>', methods=['GET'])

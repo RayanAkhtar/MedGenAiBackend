@@ -16,17 +16,20 @@ def initialize_game():
         image_count = data.get('imageCount')
         user_id = request.user_id  # From @require_auth decorator
 
-        # Ensure user exists in database
-        user = Users.query.filter_by(firebase_uid=user_id).first()
-        if not user:
-            # Create new user if they don't exist
-            user = Users(
-                firebase_uid=user_id,
-                username=f"user_{user_id[:8]}"  # Default username
-            )
-            db.session.add(user)
-            db.session.commit()
 
+        print (f"Initializing game for user {user_id}")
+        print(f"Game type: {game_type}")
+        print(f"Image count: {image_count}")
+        # Ensure user exists in database
+        user = Users.query.filter_by(user_id=user_id).first()
+      
+        if not user:
+            return jsonify({
+                'error': 'User not found',
+                'status': 'error'
+            }), 404
+        
+        print (f"User found: {user}")
         # Initialize game
         game_id, images = game_service.initialize_game(
             game_type=game_type,

@@ -7,13 +7,13 @@ from datetime import datetime
 def get_guesses_per_month():
     try:
         query = text("""
-            SELECT 
-                strftime('%Y-%m', date_of_guess) AS month,
-                COUNT(*) AS guessCount
-            FROM user_guesses
-            WHERE date_of_guess >= date('now', '-12 months')
-            GROUP BY month
-            ORDER BY month;
+SELECT 
+    TO_CHAR(date_of_guess, 'YYYY-MM') AS month,
+    COUNT(*) AS guess_count
+FROM user_guesses
+WHERE date_of_guess >= NOW() - INTERVAL '12 months'
+GROUP BY month
+ORDER BY month;
         """)
         result = db.session.execute(query)
         db.session.commit()
@@ -31,13 +31,13 @@ def get_guesses_per_month():
 def get_image_detection_accuracy():
     try:
         query = text("""
-            SELECT 
-                strftime('%Y-%m', date_of_guess) AS month,
-                SUM(CASE WHEN user_guess_type = (SELECT image_type FROM images WHERE images.image_id = user_guesses.image_id) THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS accuracy
-            FROM user_guesses
-            WHERE date_of_guess >= date('now', '-12 months')
-            GROUP BY month
-            ORDER BY month;
+SELECT 
+    TO_CHAR(date_of_guess, 'YYYY-MM') AS month,
+    SUM(CASE WHEN user_guess_type = (SELECT image_type FROM images WHERE images.image_id = user_guesses.image_id) THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS accuracy
+FROM user_guesses
+WHERE date_of_guess >= NOW() - INTERVAL '12 months'
+GROUP BY month
+ORDER BY month;
         """)
         result = db.session.execute(query)
         db.session.commit()
@@ -78,16 +78,16 @@ def get_confusion_matrix():
 def get_leaderboard():
     try:
         query = text("""
-            SELECT 
-                user_guesses.user_id, 
-                username,
-                AVG(CASE WHEN user_guess_type = image_type THEN 1 ELSE 0 END) AS accuracy
-            FROM user_guesses
-            JOIN images ON user_guesses.image_id = images.image_id
-            JOIN users on users.user_id = user_guesses.user_id
-            GROUP BY user_guesses.user_id
-            ORDER BY accuracy DESC
-            LIMIT 10;
+SELECT 
+    user_guesses.user_id, 
+    username,
+    AVG(CASE WHEN user_guess_type = image_type THEN 1 ELSE 0 END) AS accuracy
+FROM user_guesses
+JOIN images ON user_guesses.image_id = images.image_id
+JOIN users ON users.user_id = user_guesses.user_id
+GROUP BY user_guesses.user_id, users.username
+ORDER BY accuracy DESC
+LIMIT 10;
         """)
         result = db.session.execute(query)
         db.session.commit()
@@ -197,11 +197,11 @@ def get_feedback_instances():
 def get_total_real_images():
     try:
         query = text("""
-            SELECT 
-                COUNT(*) AS totalReal,
-                SUM(CASE WHEN (SELECT user_guess_type FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
-            FROM images
-            WHERE image_type = 'real';
+SELECT 
+    COUNT(*) AS totalReal,
+    SUM(CASE WHEN (SELECT MAX(user_guess_type) FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
+FROM images
+WHERE image_type = 'real';
         """)
         result = db.session.execute(query)
         db.session.commit()
@@ -219,11 +219,11 @@ def get_total_real_images():
 def get_total_ai_images():
     try:
         query = text("""
-            SELECT 
-                COUNT(*) AS totalAI,
-                SUM(CASE WHEN (SELECT user_guess_type FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
-            FROM images
-            WHERE image_type = 'ai';
+SELECT 
+    COUNT(*) AS totalAI,
+    SUM(CASE WHEN (SELECT MAX(user_guess_type) FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
+FROM images
+WHERE image_type = 'ai';
         """)
         result = db.session.execute(query)
         db.session.commit()
@@ -242,8 +242,8 @@ def get_feedback_resolution_status():
     try:
         query = text("""
             SELECT 
-                SUM(CASE WHEN resolved = 1 THEN 1 ELSE 0 END) AS resolvedCount,
-                SUM(CASE WHEN resolved = 0 THEN 1 ELSE 0 END) AS unresolvedCount
+                SUM(CASE WHEN resolved IS TRUE THEN 1 ELSE 0 END) AS resolvedCount,
+                SUM(CASE WHEN resolved IS FALSE THEN 1 ELSE 0 END) AS unresolvedCount
             FROM feedback;
         """)
         result = db.session.execute(query)
@@ -295,7 +295,7 @@ def get_random_unresolved_feedback(image_id):
             JOIN user_guesses ON feedback_users.guess_id = user_guesses.guess_id
             JOIN feedback ON feedback_users.guess_id = feedback.feedback_id
             WHERE user_guesses.image_id = '{image_id}'
-            AND feedback.resolved = 0
+            AND feedback.resolved IS FALSE
             ORDER BY RANDOM()
             LIMIT 1;
         """)
@@ -313,17 +313,100 @@ def get_random_unresolved_feedback(image_id):
         return {"error": str(e)}
 
 
-
-def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
+def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, limit=20, offset=0):
     try:
+        # Start the query string
         query_str = """
             SELECT 
                 images.image_id,
                 images.image_path,
                 images.image_type,
-                COUNT(CASE WHEN feedback.resolved = 0 THEN 1 END) AS unresolved_count,
+                COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) AS unresolved_count,
                 MAX(feedback.date_added) AS last_feedback_time,
                 images.upload_time
+            FROM images
+            LEFT JOIN user_guesses ON user_guesses.image_id = images.image_id
+            LEFT JOIN feedback_users ON feedback_users.guess_id = user_guesses.guess_id
+            LEFT JOIN feedback ON feedback.feedback_id = feedback_users.feedback_id
+
+            WHERE 1=1
+        """
+
+        # Apply filters for image_type if provided
+        if image_type and image_type != "all":
+            query_str += " AND images.image_type = :image_type"
+
+        query_str += """
+            GROUP BY images.image_id, images.image_path, images.image_type, images.upload_time
+        """
+
+        # Apply HAVING clause if resolved is False
+        if resolved is False:
+            query_str += """
+                HAVING COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) > 0
+            """
+        if resolved:
+            query_str += """
+                HAVING COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) = 0
+"""
+
+        # Apply sorting based on sort_by field
+        valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
+        if sort_by:
+            if sort_by in valid_sort_fields:
+                query_str += f" ORDER BY {sort_by}"
+            elif sort_by == "image_id":
+                query_str += " ORDER BY images.image_id"
+            else:
+                raise ValueError("Invalid sort field provided.")
+
+        # Add LIMIT and OFFSET for pagination
+        query_str += f" LIMIT :limit OFFSET :offset"
+
+        # Prepare parameters for query execution
+        params = {
+            'limit': limit,
+            'offset': offset
+        }
+
+        # If image_type filter is provided, add to params
+        if image_type:
+            params['image_type'] = image_type
+        if resolved is not None:
+            params['resolved'] = resolved
+
+        # Execute the query
+        query = text(query_str)
+        result = db.session.execute(query, params)
+
+        # Process and format the results
+        feedback_data = []
+        for row in result.mappings():
+            feedback_data.append({
+                'image_id': row['image_id'],
+                'image_path': row['image_path'],
+                'image_type': row['image_type'],
+                'unresolved_count': row['unresolved_count'],
+                'last_feedback_time': (
+                    row['last_feedback_time'].strftime('%Y-%m-%d')
+                    if isinstance(row['last_feedback_time'], datetime) else row['last_feedback_time']
+                ),
+                'upload_time': (
+                    row['upload_time'].strftime('%Y-%m-%d')
+                    if isinstance(row['upload_time'], datetime) else row['upload_time']
+                ),
+            })
+
+        return feedback_data
+
+    except Exception as e:
+        print(f"Error fetching feedback: {e}")
+        return []
+
+def get_feedback_count(image_type=None, resolved=None):
+    try:
+        count_query_str = """
+            SELECT COUNT(DISTINCT images.image_id) 
             FROM images
             LEFT JOIN user_guesses ON user_guesses.image_id = images.image_id
             LEFT JOIN feedback_users ON feedback_users.guess_id = user_guesses.guess_id
@@ -331,62 +414,27 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None):
             WHERE 1=1
         """
 
-        if image_type != "all":
-            query_str += " AND images.image_type = :image_type"
+        if image_type and image_type != "all":
+            count_query_str += " AND images.image_type = :image_type"
 
         if resolved is not None:
-            query_str += " AND feedback.resolved = :resolved"
+            count_query_str += f" AND feedback.resolved IS {'true' if resolved else 'false'}"
 
-        if sort_by:
-            valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
-            if sort_by == "image_id":
-                query_str += "ORDER BY images.image_id"  # Resolves ambiguous image_id reference
-            elif sort_by in valid_sort_fields:
-                query_str += f" ORDER BY {sort_by}"
-            else:
-                raise ValueError("Invalid sort field provided.")
+        count_query = text(count_query_str)
+        params = {
+            'image_type': image_type,
+            'resolved': resolved
+        }
+        count_result = db.session.execute(count_query, params)
 
-        query = text(query_str)
+        total_count = count_result.scalar()
 
-        params = {}
-        if image_type:
-            params['image_type'] = image_type
-        if resolved is not None:
-            params['resolved'] = resolved
+        return total_count
 
-        result = db.session.execute(query, params)
-
-        feedback_data = []
-        for row in result.mappings(): 
-            last_feedback_time = row['last_feedback_time']
-            if isinstance(last_feedback_time, str):
-                last_feedback_time = last_feedback_time 
-            elif isinstance(last_feedback_time, datetime): 
-                last_feedback_time = last_feedback_time.strftime('%Y-%m-%d')
-            else:
-                last_feedback_time = None
-
-            upload_time = row['upload_time']
-            if isinstance(upload_time, str):
-                upload_time = upload_time 
-            elif isinstance(upload_time, datetime):
-                upload_time = upload_time.strftime('%Y-%m-%d')
-            else:
-                upload_time = None
-
-            feedback_data.append({
-                'image_id': row['image_id'],
-                'image_path': row['image_path'],
-                'image_type': row['image_type'],
-                'unresolved_count': row['unresolved_count'],
-                'last_feedback_time': last_feedback_time,
-                'upload_time': upload_time
-            })
-
-        return feedback_data 
     except Exception as e:
-        print(f"Error fetching feedback: {e}")
-        return []
+        print(f"Error fetching feedback count: {e}")
+        return 0
+
     
 
 def get_image_by_id(image_id):
