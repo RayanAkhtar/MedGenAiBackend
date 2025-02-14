@@ -345,7 +345,7 @@ def get_random_unresolved_feedback(image_id):
         return {"error": str(e)}
 
 
-def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, limit=20, offset=0):
+def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort_order='asc', limit=20, offset=0):
     try:
         # Start the query string
         query_str = """
@@ -386,11 +386,13 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, limi
         valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
         if sort_by:
             if sort_by in valid_sort_fields:
-                query_str += f" ORDER BY {sort_by}"
+                query_str += f" ORDER BY {sort_by} {sort_order.upper()}"
             elif sort_by == "image_id":
-                query_str += " ORDER BY images.image_id"
+                query_str += f" ORDER BY images.image_id {sort_order.upper()}"
             else:
                 raise ValueError("Invalid sort field provided.")
+        else:
+            query_str += f" ORDER BY last_feedback_time {sort_order.upper()}"
 
         # Add LIMIT and OFFSET for pagination
         query_str += f" LIMIT :limit OFFSET :offset"

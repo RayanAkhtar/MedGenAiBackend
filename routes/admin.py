@@ -75,14 +75,19 @@ def get_feedbacks_route():
     image_type = request.args.get('image_type')
     resolved = request.args.get('resolved')
     sort_by = request.args.get('sort_by')
-
-    page = request.args.get('page', 1, type=int)
-    limit = request.args.get('limit', 20, type=int)  # 20 items per page by default
+    sort_order = request.args.get('sort_order', 'asc')
     resolved = True if resolved == 'true' else (False if resolved == 'false' else None)
 
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 20, type=int)
+
     feedback_data = get_feedback_with_filters(
-        image_type=image_type, resolved=resolved, sort_by=sort_by, 
-        limit=limit, offset=(page - 1) * limit
+        image_type=image_type, 
+        resolved=resolved, 
+        sort_by=sort_by,
+        sort_order=sort_order, 
+        limit=limit, 
+        offset=(page - 1) * limit
     )
 
     return jsonify(feedback_data)
