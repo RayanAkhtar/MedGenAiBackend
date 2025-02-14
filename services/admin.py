@@ -543,7 +543,7 @@ def get_metadata_counts():
 
 
 
-UPLOAD_FOLDER = '../MedGenAi-Images/Images/'
+UPLOAD_FOLDER = '../MedGenAI-Images/Images/'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
