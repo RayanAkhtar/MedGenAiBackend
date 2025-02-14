@@ -590,7 +590,7 @@ def upload_image_service(request, image_type):
         """)
 
         params = {
-            'image_path': os.path.join(folder, filename),
+            'image_path': "/" + os.path.join(folder, filename),
             'image_type': image_type,
             'upload_time': datetime.utcnow()
         }
