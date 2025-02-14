@@ -229,21 +229,22 @@ def get_feedback_instances():
 def get_total_real_images():
     try:
         query = text("""
-SELECT 
-    COUNT(*) AS totalReal,
-    SUM(CASE WHEN (SELECT MAX(user_guess_type) FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
-FROM images
-WHERE image_type = 'real';
+            SELECT 
+                COUNT(ug.guess_id) AS totalGuessesReal,
+                COALESCE(
+                    SUM(CASE WHEN ug.user_guess_type = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
+                    0
+                ) AS percentageDetected
+            FROM user_guesses ug
+            JOIN images img ON ug.image_id = img.image_id
+            JOIN feedback_users fu ON fu.guess_id = ug.guess_id
+            WHERE img.image_type = 'real';
         """)
         result = db.session.execute(query)
         db.session.commit()
 
-        rows = []
-        for row in result:
-            row_dict = {column: value for column, value in zip(result.keys(), row)}
-            rows.append(row_dict)
-
-        return rows
+        row = result.fetchone()
+        return {"totalGuessesReal": row[0], "percentageDetected": row[1]} if row else {}
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
@@ -251,21 +252,22 @@ WHERE image_type = 'real';
 def get_total_ai_images():
     try:
         query = text("""
-SELECT 
-    COUNT(*) AS totalAI,
-    SUM(CASE WHEN (SELECT MAX(user_guess_type) FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
-FROM images
-WHERE image_type = 'ai';
+            SELECT 
+                COUNT(ug.guess_id) AS totalGuessesAI,
+                COALESCE(
+                    SUM(CASE WHEN ug.user_guess_type = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
+                    0
+                ) AS percentageDetected
+            FROM user_guesses ug
+            JOIN images img ON ug.image_id = img.image_id
+            JOIN feedback_users fu ON fu.guess_id = ug.guess_id
+            WHERE img.image_type = 'ai';
         """)
         result = db.session.execute(query)
         db.session.commit()
 
-        rows = []
-        for row in result:
-            row_dict = {column: value for column, value in zip(result.keys(), row)}
-            rows.append(row_dict)
-
-        return rows
+        row = result.fetchone()
+        return {"totalGuessesAI": row[0], "percentageDetected": row[1]} if row else {}
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
