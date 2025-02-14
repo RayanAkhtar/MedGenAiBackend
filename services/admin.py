@@ -231,7 +231,7 @@ def get_total_real_images():
     try:
         query = text("""
             SELECT 
-                COUNT(ug.guess_id) AS totalReal,
+                COUNT(img.image_id) AS totalReal,
                 COALESCE(
                     SUM(CASE WHEN ug.user_guess_type = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
                     0
@@ -259,7 +259,7 @@ def get_total_ai_images():
     try:
         query = text("""
             SELECT 
-                COUNT(ug.guess_id) AS totalAI,
+                COUNT(img.image_id) AS totalAI,
                 COALESCE(
                     SUM(CASE WHEN ug.user_guess_type = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
                     0
