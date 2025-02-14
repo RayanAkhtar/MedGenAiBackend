@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 from flask import jsonify, flash
 from werkzeug.utils import secure_filename
+from decimal import Decimal
 
 def get_guesses_per_month():
     try:
@@ -230,7 +231,7 @@ def get_total_real_images():
     try:
         query = text("""
             SELECT 
-                COUNT(ug.guess_id) AS totalGuessesReal,
+                COUNT(ug.guess_id) AS totalReal,
                 COALESCE(
                     SUM(CASE WHEN ug.user_guess_type = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
                     0
@@ -244,7 +245,12 @@ def get_total_real_images():
         db.session.commit()
 
         row = result.fetchone()
-        return {"totalGuessesReal": row[0], "percentageDetected": row[1]} if row else {}
+        if row:
+            return {
+                "totalReal": int(row[0]),
+                "percentageDetected": float(row[1]) if isinstance(row[1], Decimal) else 0.0  # Convert Decimal to float
+            }
+        return {}
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
@@ -253,7 +259,7 @@ def get_total_ai_images():
     try:
         query = text("""
             SELECT 
-                COUNT(ug.guess_id) AS totalGuessesAI,
+                COUNT(ug.guess_id) AS totalAI,
                 COALESCE(
                     SUM(CASE WHEN ug.user_guess_type = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
                     0
@@ -267,7 +273,12 @@ def get_total_ai_images():
         db.session.commit()
 
         row = result.fetchone()
-        return {"totalGuessesAI": row[0], "percentageDetected": row[1]} if row else {}
+        if row:
+            return {
+                "totalAI": int(row[0]),  
+                "percentageDetected": float(row[1]) if isinstance(row[1], Decimal) else 0.0
+            }
+        return {}
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
