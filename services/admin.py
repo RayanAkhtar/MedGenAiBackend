@@ -236,9 +236,9 @@ def get_total_real_images():
                     SUM(CASE WHEN ug.user_guess_type = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
                     0
                 ) AS percentageDetected
-            FROM user_guesses ug
-            JOIN images img ON ug.image_id = img.image_id
-            JOIN feedback_users fu ON fu.guess_id = ug.guess_id
+            FROM images img
+            LEFT JOIN user_guesses ug ON ug.image_id = img.image_id
+            LEFT JOIN feedback_users fu ON fu.guess_id = ug.guess_id
             WHERE img.image_type = 'real';
         """)
         result = db.session.execute(query)
@@ -264,9 +264,9 @@ def get_total_ai_images():
                     SUM(CASE WHEN ug.user_guess_type = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
                     0
                 ) AS percentageDetected
-            FROM user_guesses ug
-            JOIN images img ON ug.image_id = img.image_id
-            JOIN feedback_users fu ON fu.guess_id = ug.guess_id
+            FROM images img
+            LEFT JOIN user_guesses ug ON ug.image_id = img.image_id
+            LEFT JOIN feedback_users fu ON fu.guess_id = ug.guess_id
             WHERE img.image_type = 'ai';
         """)
         result = db.session.execute(query)
