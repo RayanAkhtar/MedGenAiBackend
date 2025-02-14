@@ -543,12 +543,8 @@ def get_metadata_counts():
 
 
 
-UPLOAD_FOLDER = 'images_get/uploads/'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'}
 
 def upload_image_service(request, image_type):
     """
@@ -577,7 +573,7 @@ def upload_image_service(request, image_type):
         else:
             return jsonify({'error': 'Invalid image type'}), 400
 
-        filepath = os.path.join(UPLOAD_FOLDER, folder, filename)
+        filepath = os.path.join(folder, filename)
 
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
