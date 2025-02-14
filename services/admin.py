@@ -3,6 +3,9 @@
 from __init__ import db
 from sqlalchemy import text, bindparam
 from datetime import datetime 
+import os
+from flask import jsonify, flash
+from werkzeug.utils import secure_filename
 
 def get_guesses_per_month():
     try:
@@ -535,3 +538,77 @@ def get_metadata_counts():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
+
+
+UPLOAD_FOLDER = 'images_get/uploads/'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def upload_image_service(request, image_type):
+    """
+    Handles file upload and saves the record in the database using execute() for SQL insertion.
+    
+    :param request: Flask request object containing the file
+    :param image_type: 'real' or 'ai' (used for categorization)
+    """
+    if 'file' not in request.files:
+        flash('No file part')
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+    
+    if file.filename == '':
+        flash('No selected file')
+        return jsonify({'error': 'No selected file'}), 400
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        
+        if image_type == 'real':
+            folder = 'real-images-upload'
+        elif image_type == 'ai':
+            folder = 'ai-images-upload'
+        else:
+            return jsonify({'error': 'Invalid image type'}), 400
+
+        filepath = os.path.join(UPLOAD_FOLDER, folder, filename)
+
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+        file.save(filepath)
+
+        query = text("""
+            INSERT INTO images (image_path, image_type, upload_time)
+            VALUES (:image_path, :image_type, :upload_time)
+            RETURNING image_id
+        """)
+
+        params = {
+            'image_path': filepath,
+            'image_type': image_type,
+            'upload_time': datetime.utcnow()
+        }
+
+        try:
+            result = db.session.execute(query, params)
+            db.session.commit()
+
+            new_image_id = result.scalar()  
+
+            flash(f'{image_type.capitalize()} image successfully uploaded')
+            return jsonify({
+                'message': f'{image_type.capitalize()} image uploaded successfully',
+                'image_id': new_image_id,
+                'filepath': filepath
+            }), 200
+
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+    flash('Invalid file format')
+    return jsonify({'error': 'Invalid file format'}), 400

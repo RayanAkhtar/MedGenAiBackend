@@ -1,6 +1,5 @@
 from flask import Blueprint, jsonify, request, flash, send_from_directory
 import os
-from math import ceil
 from werkzeug.utils import secure_filename
 from __init__ import db
 from services.admin import (
@@ -21,7 +20,8 @@ from services.admin import (
     get_ml_metrics,
     fetch_data_for_csv,
     get_metadata_counts,
-    get_feedback_count
+    get_feedback_count,
+    upload_image_service
 )
 
 bp = Blueprint('admin', __name__)
@@ -60,67 +60,14 @@ def get_random_unresolved_feedback_route(image_id):
     return jsonify(get_random_unresolved_feedback(image_id))
 
 
-UPLOAD_FOLDER = 'images_get/uploads/'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 @bp.route('/admin/uploadRealImage', methods=['POST'])
-def upload_real_image():
-    if 'file' not in request.files:
-        flash('No file part')
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    
-    if file.filename == '':
-        flash('No selected file')
-        return jsonify({'error': 'No selected file'}), 400
-    
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(UPLOAD_FOLDER, 'real', filename)
-        
-        # Create a subdirectory for real images if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        
-        file.save(filepath)
-        flash('Real image successfully uploaded')
-        return jsonify({'message': 'Real image uploaded successfully', 'filepath': filepath}), 200
-
-    flash('Invalid file type')
-    return jsonify({'error': 'Invalid file type'}), 400
-
+def upload_real_image_route():
+    return upload_image_service(request, "real")
 
 @bp.route('/admin/uploadAIImage', methods=['POST'])
-def upload_ai_image():
-    if 'file' not in request.files:
-        flash('No file part')
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    
-    if file.filename == '':
-        flash('No selected file')
-        return jsonify({'error': 'No selected file'}), 400
-    
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(UPLOAD_FOLDER, 'ai', filename)
-        
-        # Create a subdirectory for ai images if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        
-        file.save(filepath)
-        flash('AI image successfully uploaded')
-        return jsonify({'message': 'AI image uploaded successfully', 'filepath': filepath}), 200
-
-    flash('Invalid file type')
-    return jsonify({'error': 'Invalid file type'}), 400
+def upload_ai_image_route():
+    return upload_image_service(request, "ai")
 
 
 @bp.route('/admin/getFeedbacks', methods=['GET'])
