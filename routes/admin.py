@@ -289,10 +289,9 @@ def convert_to_csv(data):
     return csv_data
 
 
-@bp.route('/admin/resolveAllFeedbackByImage', methods=['POST'])
-def resolve_all_feedback_by_image_route():
+@bp.route('/admin/resolveAllFeedbackByImage/<image_id>', methods=['POST'])
+def resolve_all_feedback_by_image_route(image_id):
     try:
-        image_id = request.args.get('imageId', type=int)  # Get image_id from query string
         if not image_id:
             return jsonify({"error": "imageId is required"}), 400
 
