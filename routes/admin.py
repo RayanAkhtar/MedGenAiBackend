@@ -21,7 +21,8 @@ from services.admin import (
     fetch_data_for_csv,
     get_metadata_counts,
     get_feedback_count,
-    upload_image_service
+    upload_image_service,
+    resolve_all_feedback
 )
 
 bp = Blueprint('admin', __name__)
@@ -286,3 +287,19 @@ def convert_to_csv(data):
     rows = [','.join(str(value) for value in row.values()) for row in data]
     csv_data = ','.join(header) + '\n' + '\n'.join(rows)
     return csv_data
+
+
+@bp.route('/admin/resolveAllFeedback', methods=['POST'])
+def resolve_all_feedback_route():
+    try:
+        feedback_id = request.args.get('feedbackId')
+        if feedback_id:
+            result = resolve_all_feedback(feedback_id)
+            if result.get('error'):
+                return jsonify(result), 500
+            return jsonify(result)
+        else:
+            return jsonify({"error": "feedbackId is required"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+

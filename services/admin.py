@@ -627,3 +627,46 @@ def upload_image_service(request, image_type):
 
     flash('Invalid file format')
     return jsonify({'error': 'Invalid file format'}), 400
+
+
+def resolve_all_feedback(feedback_id: str):
+    try:
+        query = text("""
+            SELECT guess_id 
+            FROM feedback
+            WHERE feedback_id = :feedback_id
+        """)
+        result = db.session.execute(query, {'feedback_id': feedback_id})
+        db.session.commit()
+        
+        feedback_row = result.fetchone()
+        if not feedback_row:
+            return {"error": "Feedback not found"}
+        
+        guess_id = feedback_row['guess_id']
+
+        update_query = text("""
+            UPDATE feedback
+            SET resolved = TRUE
+            WHERE guess_id = :guess_id
+        """)
+        db.session.execute(update_query, {'guess_id': guess_id})
+        db.session.commit()
+
+        update_unresolved_query = text("""
+            UPDATE user_guesses
+            SET unresolved_count = (
+                SELECT COUNT(*)
+                FROM feedback
+                WHERE guess_id = :guess_id AND resolved = FALSE
+            )
+            WHERE guess_id = :guess_id
+        """)
+        db.session.execute(update_unresolved_query, {'guess_id': guess_id})
+        db.session.commit()
+
+        return {"message": "Feedback marked as resolved"}
+    
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
