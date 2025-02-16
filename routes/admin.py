@@ -22,7 +22,7 @@ from services.admin import (
     get_metadata_counts,
     get_feedback_count,
     upload_image_service,
-    resolve_all_feedback
+    resolve_all_feedback_by_image
 )
 
 bp = Blueprint('admin', __name__)
@@ -289,17 +289,22 @@ def convert_to_csv(data):
     return csv_data
 
 
-@bp.route('/admin/resolveAllFeedback', methods=['POST'])
-def resolve_all_feedback_route():
+@bp.route('/admin/resolveAllFeedbackByImage', methods=['POST'])
+def resolve_all_feedback_by_image_route():
     try:
-        feedback_id = request.args.get('feedbackId')
-        if feedback_id:
-            result = resolve_all_feedback(feedback_id)
-            if result.get('error'):
-                return jsonify(result), 500
-            return jsonify(result)
-        else:
-            return jsonify({"error": "feedbackId is required"}), 400
+        image_id = request.args.get('imageId', type=int)  # Get image_id from query string
+        if not image_id:
+            return jsonify({"error": "imageId is required"}), 400
+
+        # Call the service function to resolve feedback for the image
+        result = resolve_all_feedback_by_image(image_id)
+
+        if result.get('error'):
+            return jsonify(result), 500  # Return error if there is an issue
+        
+        return jsonify(result)  # Return success message
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
