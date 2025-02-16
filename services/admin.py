@@ -640,7 +640,7 @@ def resolve_all_feedback_by_image(image_id: int):
         result = db.session.execute(query, {'image_id': image_id})
         db.session.commit()
 
-        guess_ids = [row['guess_id'] for row in result]
+        guess_ids = [row[0] for row in result]
 
         if not guess_ids:
             return {"error": "No guesses found for the given image_id"}
@@ -648,7 +648,12 @@ def resolve_all_feedback_by_image(image_id: int):
         update_query = text("""
             UPDATE feedback
             SET resolved = TRUE
-            WHERE guess_id IN :guess_ids
+            WHERE feedback_id IN (
+                SELECT fu.feedback_id
+                FROM feedback_users fu
+                JOIN feedback f ON fu.feedback_id = f.feedback_id
+                WHERE fu.guess_id IN :guess_ids
+            )
         """)
         db.session.execute(update_query, {'guess_ids': tuple(guess_ids)})
         db.session.commit()
