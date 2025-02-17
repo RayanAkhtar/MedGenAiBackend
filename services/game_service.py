@@ -24,11 +24,17 @@ class GameService:
         try:
             game_id = str(uuid.uuid4())
             print(f"Initializing classic game {game_id} for user {user_id}")
+            print(f"Requested image count: {image_count}")
 
             # Get equal number of real and AI images
             half_count = max(image_count // 2, 1)
+            print(f"Fetching {half_count} real images and {half_count} AI images")
+            
             real_images = get_images_rand(half_count, 'real')
+            print(f"Got {len(real_images)} real images")
+            
             ai_images = get_images_rand(half_count, 'ai')
+            print(f"Got {len(ai_images)} AI images")
 
             # Format images with their types
             image_data = (
@@ -36,7 +42,7 @@ class GameService:
                 [{'url': url, 'type': 'ai'} for url in ai_images]
             )
             
-            # Shuffle the images
+            print(f"Total images after combining: {len(image_data)}")
             random.shuffle(image_data)
 
             # Store game session
