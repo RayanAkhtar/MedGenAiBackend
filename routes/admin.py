@@ -316,5 +316,5 @@ def get_users_by_tags():
     if not tag_names:
         return jsonify({"error": "No tags provided"}), 400
 
-    return(filter_users_by_tags(tag_names, match_all))
+    return jsonify(filter_users_by_tags(tag_names, match_all))
 

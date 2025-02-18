@@ -672,7 +672,7 @@ def filter_users_by_tags(tag_names, match_all=True):
                       If False, returns users with ANY tag.
     :return: List of user objects.
     """
-    query = db.session.query(Users).join(UserTags).join(Tag).filter(Tag.name.in_(tag_names))
+    query = db.session.query(Users).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_([t.lower() for t in tag_names]))
 
     if match_all:
         query = query.group_by(Users.user_id).having(func.count(Tag.tag_id) == len(tag_names))
