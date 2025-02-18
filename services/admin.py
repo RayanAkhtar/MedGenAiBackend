@@ -675,7 +675,7 @@ def filter_users_by_tags(tag_names, match_all=True):
     query = db.session.query(Users).join(UserTags).join(Tag).filter(Tag.name.in_(tag_names))
 
     if match_all:
-        query = query.group_by(User.user_id).having(func.count(Tag.tag_id) == len(tag_names))
+        query = query.group_by(Users.user_id).having(func.count(Tag.tag_id) == len(tag_names))
     else:
         query = query.distinct()
 
