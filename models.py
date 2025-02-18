@@ -1,5 +1,5 @@
 from __init__ import db
-
+from sqlalchemy.dialects.postgresql import ARRAY
 
 class Competition(db.Model):
     __tablename__ = 'competitions'
@@ -15,7 +15,7 @@ class CompetitionUser(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     competition_id = db.Column(db.Integer, db.ForeignKey('competitions.competition_id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    user_id = db.Column(db.String(128), db.ForeignKey('users.user_id'), nullable=False)
     score = db.Column(db.Integer, nullable=False)
 
     competition = db.relationship('Competition', backref=db.backref('competition_users', lazy=True))
@@ -49,7 +49,7 @@ class UserGuess(db.Model):
 
     guess_id = db.Column(db.Integer, primary_key=True)
     image_id = db.Column(db.Integer, db.ForeignKey('images.image_id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    user_id = db.Column(db.String(128), db.ForeignKey('users.user_id'), nullable=False)
     user_guess_type = db.Column(db.String(50), nullable=False)
     date_of_guess = db.Column(db.DateTime, nullable=False)
 
@@ -75,3 +75,15 @@ class Feedback(db.Model):
     msg = db.Column(db.String(255), nullable=False)
     resolved = db.Column(db.Boolean, default=False, nullable=False)
     date_added = db.Column(db.DateTime, nullable=False)
+
+class Tag(db.Model):
+    __tablename__ = 'tag'
+
+    tag_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable = False)
+
+class UserTags(db.Model):
+    __tablename__ = 'user_tags'
+
+    user_id = db.Column(db.String(128), db.ForeignKey('users.user_id'), primary_key=True)
+    tag_id = db.Column(db.Integer, db.ForeignKey('tag.tag_id'), nullable=False) 

@@ -22,7 +22,8 @@ from services.admin import (
     get_metadata_counts,
     get_feedback_count,
     upload_image_service,
-    resolve_all_feedback_by_image
+    resolve_all_feedback_by_image,
+    filter_users_by_tags
 )
 
 bp = Blueprint('admin', __name__)
@@ -306,4 +307,14 @@ def resolve_all_feedback_by_image_route(image_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@bp.route('/admin/filter-users', methods=['GET'])
+def get_users_by_tags():
+    """API to return users filtered by tags."""
+    
+    tag_names = request.args.getlist('tags')
+    match_all = request.args.get('all', 'false').lower() == 'true'
+    if not tag_names:
+        return jsonify({"error": "No tags provided"}), 400
+
+    return(filter_users_by_tags(tag_names, match_all))
 

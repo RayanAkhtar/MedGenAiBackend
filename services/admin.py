@@ -1,6 +1,7 @@
 # services/admin.py
 
 from __init__ import db
+from models import *
 from sqlalchemy import text, bindparam
 from datetime import datetime 
 import os
@@ -554,8 +555,6 @@ def get_metadata_counts():
         db.session.rollback()
         return {"error": str(e)}
 
-
-
 UPLOAD_FOLDER = '../MedGenAI-Images/Images/'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -663,3 +662,21 @@ def resolve_all_feedback_by_image(image_id: int):
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
+def filter_users_by_tags(tag_names, match_all=True):
+    """
+    Filters users based on tags, either matching ANY tag or ALL tags.
+
+    :param tag_names: List of tag names to filter users by.
+    :param match_all: If True, returns users with ALL tags. 
+                      If False, returns users with ANY tag.
+    :return: List of user objects.
+    """
+    query = db.session.query(Users).join(UserTags).join(Tag).filter(Tag.name.in_(tag_names))
+
+    if match_all:
+        query = query.group_by(User.user_id).having(func.count(Tag.tag_id) == len(tag_names))
+    else:
+        query = query.distinct()
+
+    return [{"user": user.username, "level": user.level, "games_started": user.games_started, "score": user.score} for user in query.all()]
