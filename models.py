@@ -86,4 +86,4 @@ class UserTags(db.Model):
     __tablename__ = 'user_tags'
 
     user_id = db.Column(db.String(128), db.ForeignKey('users.user_id'), primary_key=True)
-    tag_id = db.Column(db.Integer, db.ForeignKey('tag.tag_id'), nullable=False) 
+    tag_id = db.Column(db.Integer, db.ForeignKey('tag.tag_id'), primary_key=True) 
