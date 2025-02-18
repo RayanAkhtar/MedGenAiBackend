@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 from decimal import Decimal
 
 
-def get_users_with_filters(sort_by=None, sort_order='asc', limit=20, offset=0, username=None, level=None, min_games_won=None, max_games_won=None, min_score=None, max_score=None):
+def get_users_with_filters(sort_by=None, sort_order='asc', limit=20, offset=0, level=None, min_games_won=None, max_games_won=None, min_score=None, max_score=None):
     try:
         # Start the query string
         query_str = """
@@ -21,9 +21,6 @@ def get_users_with_filters(sort_by=None, sort_order='asc', limit=20, offset=0, u
         params = {'limit': limit, 'offset': offset}
 
         # Apply filters conditionally
-        if username:
-            query_str += " AND username ILIKE :username"
-            params['username'] = f"%{username}%"  # Case-insensitive partial match
 
         if level is not None:
             query_str += " AND level = :level"

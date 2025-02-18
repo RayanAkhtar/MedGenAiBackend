@@ -25,6 +25,7 @@ from services.admin import (
     resolve_all_feedback_by_image,
     filter_users_by_tags
 )
+from services.admin_user import get_users_with_filters
 
 bp = Blueprint('admin', __name__)
 
@@ -60,7 +61,6 @@ def get_matching_feedback_for_image_route(image_id):
 @bp.route('/admin/getRandomUnresolvedFeedback/<image_id>', methods=['GET'])
 def get_random_unresolved_feedback_route(image_id):
     return jsonify(get_random_unresolved_feedback(image_id))
-
 
 
 @bp.route('/admin/uploadRealImage', methods=['POST'])
@@ -317,4 +317,32 @@ def get_users_by_tags():
         return jsonify({"error": "No tags provided"}), 400
 
     return jsonify(filter_users_by_tags(tag_names, match_all))
+
+@bp.route('/admin/getUsers', methods=['GET'])
+def get_users_data():
+    level = request.args.get('level')
+    min_games_won = request.args.get('min_games_won')
+    max_games_won = request.args.get('max_games_won')
+    min_score = request.args.get('min_score')
+    max_score = request.args.get('max_score')
+    sort_by = request.args.get('sort_by') 
+    sort_order = request.args.get('sort_order', 'asc')
+
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 20, type=int)
+
+    feedback_data = get_users_with_filters(
+        level=level,
+        min_games_won=min_games_won,
+        max_games_won=max_games_won,
+        max_score=max_score,
+        min_score=min_score,
+        sort_by=sort_by,
+        sort_order=sort_order, 
+        limit=limit, 
+        offset=(page - 1) * limit
+    )
+
+    return jsonify(feedback_data)
+
 
