@@ -2,7 +2,7 @@
 
 from __init__ import db
 from models import *
-from sqlalchemy import text, bindparam
+from sqlalchemy import text, bindparam, func
 from datetime import datetime 
 import os
 from flask import jsonify, flash
