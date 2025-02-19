@@ -112,3 +112,23 @@ def get_users_ordered():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+    
+def get_user_data(user_id):
+    try:
+        query = text("""
+            SELECT * FROM users WHERE user_id = :user_id;
+        """)
+        params = {'user_id': user_id}
+
+        result = db.session.execute(query, params)
+        row = result.fetchone()  # Fetch single row safely
+
+        if row is None:
+            return {"error": "User not found"}
+
+        # Convert row to dictionary using `zip`
+        return dict(zip(result.keys(), row))
+
+    except Exception as e:
+        db.session.rollback()  # Rollback only if a transaction fails
+        return {"error": f"Database error: {str(e)}"}

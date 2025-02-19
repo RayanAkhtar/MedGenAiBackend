@@ -25,7 +25,7 @@ from services.admin import (
     resolve_all_feedback_by_image,
     filter_users_by_tags
 )
-from services.admin_user import get_users_with_filters
+from services.admin_user import get_user_data, get_users_with_filters
 
 bp = Blueprint('admin', __name__)
 
@@ -346,3 +346,7 @@ def get_users_data():
     return jsonify(feedback_data)
 
 
+@bp.route('/getUsers/<int:user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    user_data = get_user_data(user_id)
+    return jsonify(user_data)
