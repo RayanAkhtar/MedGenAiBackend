@@ -23,7 +23,8 @@ def get_users_with_filters(sort_by=None, sort_order='asc', limit=20, offset=0, l
                 ROUND(COALESCE(
                     (COUNT(CASE WHEN user_guesses.user_guess_type = images.image_type THEN 1 END) * 100.0) / NULLIF(COUNT(user_guesses.guess_id), 0),
                     0
-                ), 2) AS accuracy
+                ), 2) AS accuracy,
+                COALESCE(COUNT(user_guesses.guess_id), 0) as engagement
             FROM users
             LEFT JOIN user_guesses ON users.user_id = user_guesses.user_id
             LEFT JOIN images ON user_guesses.image_id = images.image_id
@@ -54,7 +55,7 @@ def get_users_with_filters(sort_by=None, sort_order='asc', limit=20, offset=0, l
             params['max_score'] = max_score
 
         # Define valid sorting fields
-        valid_sort_fields = ['user_id', 'username', 'level', 'games_won', 'score', 'accuracy']
+        valid_sort_fields = ['user_id', 'username', 'level', 'games_won', 'score', 'accuracy', 'engagement']
         
         # Apply sorting if a valid sort_by field is provided
         if sort_by in valid_sort_fields:
@@ -81,7 +82,8 @@ def get_users_with_filters(sort_by=None, sort_order='asc', limit=20, offset=0, l
                 'games_started': row['games_started'],
                 'games_won': row['games_won'],
                 'score': row['score'],
-                'accuracy': row['accuracy']
+                'accuracy': row['accuracy'],
+                'engagement': row['engagement']
             })
 
         return users_data
