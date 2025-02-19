@@ -1,8 +1,13 @@
 # services/admin.py
 
 from __init__ import db
-from sqlalchemy import text, bindparam
+from models import *
+from sqlalchemy import text, bindparam, func
 from datetime import datetime 
+import os
+from flask import jsonify, flash
+from werkzeug.utils import secure_filename
+from decimal import Decimal
 
 def get_guesses_per_month():
     try:
@@ -74,6 +79,35 @@ def get_confusion_matrix():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+    
+    
+def get_image_confusion_matrix(image_id):
+    try:
+        query = text(f"""
+            SELECT
+                SUM(CASE WHEN user_guesses.user_guess_type = 'real' AND images.image_type = 'real' THEN 1 ELSE 0 END) AS truePositive,
+                SUM(CASE WHEN user_guesses.user_guess_type = 'ai' AND images.image_type = 'real' THEN 1 ELSE 0 END) AS falsePositive,
+                SUM(CASE WHEN user_guesses.user_guess_type = 'real' AND images.image_type = 'ai' THEN 1 ELSE 0 END) AS falseNegative,
+                SUM(CASE WHEN user_guesses.user_guess_type = 'ai' AND images.image_type = 'ai' THEN 1 ELSE 0 END) AS trueNegative
+            FROM user_guesses
+            JOIN images ON user_guesses.image_id = images.image_id
+            WHERE images.image_id = {image_id}
+        """)
+        
+        result = db.session.execute(query)
+        db.session.commit()
+
+        confusion_matrix = {}
+        
+        for row in result:
+            confusion_matrix = {column: value for column, value in zip(result.keys(), row)}
+
+        return confusion_matrix
+    
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
+
 
 def get_leaderboard():
     try:
@@ -197,21 +231,27 @@ def get_feedback_instances():
 def get_total_real_images():
     try:
         query = text("""
-SELECT 
-    COUNT(*) AS totalReal,
-    SUM(CASE WHEN (SELECT MAX(user_guess_type) FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
-FROM images
-WHERE image_type = 'real';
+            SELECT 
+                COUNT(img.image_id) AS totalReal,
+                COALESCE(
+                    SUM(CASE WHEN ug.user_guess_type = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
+                    0
+                ) AS percentageDetected
+            FROM images img
+            LEFT JOIN user_guesses ug ON ug.image_id = img.image_id
+            LEFT JOIN feedback_users fu ON fu.guess_id = ug.guess_id
+            WHERE img.image_type = 'real';
         """)
         result = db.session.execute(query)
         db.session.commit()
 
-        rows = []
-        for row in result:
-            row_dict = {column: value for column, value in zip(result.keys(), row)}
-            rows.append(row_dict)
-
-        return rows
+        row = result.fetchone()
+        if row:
+            return {
+                "totalReal": int(row[0]),
+                "percentageDetected": float(row[1]) if isinstance(row[1], Decimal) else 0.0  # Convert Decimal to float
+            }
+        return {}
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
@@ -219,21 +259,27 @@ WHERE image_type = 'real';
 def get_total_ai_images():
     try:
         query = text("""
-SELECT 
-    COUNT(*) AS totalAI,
-    SUM(CASE WHEN (SELECT MAX(user_guess_type) FROM user_guesses WHERE user_guesses.image_id = images.image_id) = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS percentageDetected
-FROM images
-WHERE image_type = 'ai';
+            SELECT 
+                COUNT(img.image_id) AS totalAI,
+                COALESCE(
+                    SUM(CASE WHEN ug.user_guess_type = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
+                    0
+                ) AS percentageDetected
+            FROM images img
+            LEFT JOIN user_guesses ug ON ug.image_id = img.image_id
+            LEFT JOIN feedback_users fu ON fu.guess_id = ug.guess_id
+            WHERE img.image_type = 'ai';
         """)
         result = db.session.execute(query)
         db.session.commit()
 
-        rows = []
-        for row in result:
-            row_dict = {column: value for column, value in zip(result.keys(), row)}
-            rows.append(row_dict)
-
-        return rows
+        row = result.fetchone()
+        if row:
+            return {
+                "totalAI": int(row[0]),  
+                "percentageDetected": float(row[1]) if isinstance(row[1], Decimal) else 0.0
+            }
+        return {}
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
@@ -313,7 +359,7 @@ def get_random_unresolved_feedback(image_id):
         return {"error": str(e)}
 
 
-def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, limit=20, offset=0):
+def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort_order='asc', limit=20, offset=0):
     try:
         # Start the query string
         query_str = """
@@ -354,11 +400,13 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, limi
         valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
         if sort_by:
             if sort_by in valid_sort_fields:
-                query_str += f" ORDER BY {sort_by}"
+                query_str += f" ORDER BY {sort_by} {sort_order.upper()}"
             elif sort_by == "image_id":
-                query_str += " ORDER BY images.image_id"
+                query_str += f" ORDER BY images.image_id {sort_order.upper()}"
             else:
                 raise ValueError("Invalid sort field provided.")
+        else:
+            query_str += f" ORDER BY last_feedback_time {sort_order.upper()}"
 
         # Add LIMIT and OFFSET for pagination
         query_str += f" LIMIT :limit OFFSET :offset"
@@ -506,3 +554,129 @@ def get_metadata_counts():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
+UPLOAD_FOLDER = '../MedGenAI-Images/Images/'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def upload_image_service(request, image_type):
+    """
+    Handles file upload and saves the record in the database using execute() for SQL insertion.
+    
+    :param request: Flask request object containing the file
+    :param image_type: 'real' or 'ai' (used for categorization)
+    """
+    if 'file' not in request.files:
+        flash('No file part')
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+    
+    if file.filename == '':
+        flash('No selected file')
+        return jsonify({'error': 'No selected file'}), 400
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        
+        if image_type == 'real':
+            folder = 'real-images-upload'
+        elif image_type == 'ai':
+            folder = 'ai-images-upload'
+        else:
+            return jsonify({'error': 'Invalid image type'}), 400
+
+        filepath = os.path.join(UPLOAD_FOLDER, folder, filename)
+
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+        file.save(filepath)
+
+        query = text("""
+            INSERT INTO images (image_path, image_type, upload_time)
+            VALUES (:image_path, :image_type, :upload_time)
+            RETURNING image_id
+        """)
+
+        params = {
+            'image_path': "/" + os.path.join(folder, filename),
+            'image_type': image_type,
+            'upload_time': datetime.utcnow()
+        }
+
+        try:
+            result = db.session.execute(query, params)
+            db.session.commit()
+
+            new_image_id = result.scalar()  
+
+            flash(f'{image_type.capitalize()} image successfully uploaded')
+            return jsonify({
+                'message': f'{image_type.capitalize()} image uploaded successfully',
+                'image_id': new_image_id,
+                'filepath': filepath
+            }), 200
+
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+    flash('Invalid file format')
+    return jsonify({'error': 'Invalid file format'}), 400
+
+
+def resolve_all_feedback_by_image(image_id: int):
+    try:
+        query = text("""
+            SELECT ug.guess_id
+            FROM user_guesses ug
+            JOIN images img ON ug.image_id = img.image_id
+            WHERE img.image_id = :image_id
+        """)
+        result = db.session.execute(query, {'image_id': image_id})
+        db.session.commit()
+
+        guess_ids = [row[0] for row in result]
+
+        if not guess_ids:
+            return {"error": "No guesses found for the given image_id"}
+
+        update_query = text("""
+            UPDATE feedback
+            SET resolved = TRUE
+            WHERE feedback_id IN (
+                SELECT fu.feedback_id
+                FROM feedback_users fu
+                JOIN feedback f ON fu.feedback_id = f.feedback_id
+                WHERE fu.guess_id IN :guess_ids
+            )
+        """)
+        db.session.execute(update_query, {'guess_ids': tuple(guess_ids)})
+        db.session.commit()
+
+        return {"message": "All feedback for the image has been marked as resolved"}
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
+
+def filter_users_by_tags(tag_names, match_all=True):
+    """
+    Filters users based on tags, either matching ANY tag or ALL tags.
+
+    :param tag_names: List of tag names to filter users by.
+    :param match_all: If True, returns users with ALL tags. 
+                      If False, returns users with ANY tag.
+    :return: List of user objects.
+    """
+    query = db.session.query(Users).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_([t.lower() for t in tag_names]))
+
+    if match_all:
+        query = query.group_by(Users.user_id).having(func.count(Tag.tag_id) == len(tag_names))
+    else:
+        query = query.distinct()
+
+    return [{"user": user.username, "level": user.level, "games_started": user.games_started, "score": user.score} for user in query.all()]
