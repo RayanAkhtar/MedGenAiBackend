@@ -6,8 +6,10 @@ class Competition(db.Model):
 
     competition_id = db.Column(db.Integer, primary_key=True)
     competition_name = db.Column(db.String(100), nullable=False)
+    competition_type = db.Column(db.String(100), nullable=False)
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
+    
 
 
 class CompetitionUser(db.Model):
