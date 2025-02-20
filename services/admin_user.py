@@ -115,14 +115,14 @@ def get_users_ordered():
     
 def get_user_data_by_id(user_id):
     try:
-        query = text("SELECT * FROM users WHERE user_id = CAST(:user_id AS VARCHAR)")
+        query = text("SELECT * FROM users WHERE user_id = CAST(:user_id AS VARCHAR);")
         result = db.session.execute(query, {'user_id': str(user_id)})  # Ensure user_id is string
         row = result.fetchone()
 
         if not row:
-            return jsonify({"error": "User not found"}), 404
+            return {"error": "User not found"}, 404  # Return a dict instead of jsonify()
 
-        return jsonify(dict(zip(result.keys(), row)))
+        return dict(zip(result.keys(), row)), 200  # Return dictionary instead of jsonify()
 
     except Exception as e:
-        return jsonify({"error": f"Database error: {str(e)}"}), 500
+        return {"error": f"Database error: {str(e)}"}, 500  # Return dictionary
