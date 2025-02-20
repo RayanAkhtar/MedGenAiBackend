@@ -688,7 +688,7 @@ def filter_users_by_tags(tag_names, match_all=True):
         query = query.distinct()
 
     return [{
-    	"user": user.username, 
+    	"username": user.username, 
     	"level": user.level, 
     	"games_started": user.games_started, 
     	"score": user.score, 
