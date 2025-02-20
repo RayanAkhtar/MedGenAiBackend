@@ -346,7 +346,7 @@ def get_users_data():
     return jsonify(feedback_data)
 
 
-@bp.route('/getUsers/<int:user_id>', methods=['GET'])
+@bp.route('admin/getUsers/<int:user_id>', methods=['GET'])
 def get_user_by_id(user_id):
     user_data = get_user_data(user_id)
     return jsonify(user_data)

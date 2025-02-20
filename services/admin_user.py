@@ -113,22 +113,16 @@ def get_users_ordered():
         db.session.rollback()
         return {"error": str(e)}
     
-def get_user_data(user_id):
+def get_user_data_by_id(user_id):
     try:
-        query = text("""
-            SELECT * FROM users WHERE user_id = :user_id;
-        """)
-        params = {'user_id': user_id}
+        query = text("SELECT * FROM users WHERE user_id = CAST(:user_id AS VARCHAR)")
+        result = db.session.execute(query, {'user_id': str(user_id)})  # Ensure user_id is string
+        row = result.fetchone()
 
-        result = db.session.execute(query, params)
-        row = result.fetchone()  # Fetch single row safely
+        if not row:
+            return jsonify({"error": "User not found"}), 404
 
-        if row is None:
-            return {"error": "User not found"}
-
-        # Convert row to dictionary using `zip`
-        return dict(zip(result.keys(), row))
+        return jsonify(dict(zip(result.keys(), row)))
 
     except Exception as e:
-        db.session.rollback()  # Rollback only if a transaction fails
-        return {"error": f"Database error: {str(e)}"}
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
