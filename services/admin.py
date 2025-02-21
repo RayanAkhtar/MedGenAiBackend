@@ -675,15 +675,15 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True):
     tag_names = [t.lower() for t in tag_names]
     query = db.session.query(
     		Users,
-    		func.count(UserGuess.guess_id).label("total_guesses"),
-    		func.count().filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
+    		func.count(func.distinct(UserGuess.guess_id)).label("total_guesses"),
+    		func.count(func.distinct(UserGuess.guess_id)).filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
     ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)) \
      .join(UserGuess, UserGuess.user_id == Users.user_id, isouter = True) \
      .join(Images, Images.image_id == UserGuess.image_id, isouter = True) \
      .group_by(Users.user_id)
 
     if match_all:
-        query = query.having(func.count(Tag.tag_id) >= len(tag_names))
+        query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
     else:
         query = query.distinct()
 
