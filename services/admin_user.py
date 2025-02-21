@@ -116,7 +116,7 @@ def get_users_ordered():
 def get_user_data_by_username(username):
     try:
         query = text("SELECT * FROM users WHERE username = CAST(:username AS VARCHAR);")
-        result = db.session.execute(query, {'user_id': str(username)})  # Ensure user_id is string
+        result = db.session.execute(query, {'username': str(username)})  # Ensure user_id is string
         row = result.fetchone()
 
         if not row:
