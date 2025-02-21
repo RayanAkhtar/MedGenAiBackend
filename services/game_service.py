@@ -1,62 +1,94 @@
 from models import Users, Images, UserGuess
 from __init__ import db
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 import uuid
 import datetime
+import random
+from services.images import get_images_rand
 
 class GameService:
     def __init__(self):
         self.active_games = {}
 
-    def initialize_game(self, game_type: str, image_count: int, user_id: int) -> Tuple[str, List[dict]]:
+    def initialize_classic_game(self, image_count: int, user_id: str) -> Tuple[str, List[Dict]]:
         """
-        Initialize a new game session for a user
+        Initialize a classic game with mixed real and AI images
         
         Args:
-            game_type (str): Type of game (e.g., 'classic')
-            image_count (int): Number of images for the game
-            user_id (int): Database user ID
+            image_count (int): Total number of images for the game
+            user_id (str): User's ID
             
         Returns:
-            Tuple[str, List[dict]]: Game ID and list of selected images
+            Tuple[str, List[dict]]: Game ID and list of image URLs
         """
-        # Generate unique game ID
-        game_id = str(uuid.uuid4())
-        print (f"Game ID: {game_id}")
-        # Get random images from database
-        # images = Images.query.filter_by(
-        #     image_type=game_type
-        # ).order_by(db.func.random()).limit(image_count).all()
-        # print (f"Images: {images}")
-        # if not images:
-        #     raise ValueError(f"No images found for game type: {game_type}")
-        
-        # Format images for response
-        # image_data = [{
-        #     'id': img.image_id,
-        #     'path': img.image_path,
-        #     'type': img.image_type
-        # } for img in images]
+        try:
+            game_id = str(uuid.uuid4())
+            print(f"Initializing classic game {game_id} for user {user_id}")
+            print(f"Requested image count: {image_count}")
 
-        # Generate dummy image data instead
-        image_data = []
-        for i in range(image_count):
-            image_data.append({
-                'id': i+1,
-                'path': f'/images/{game_type}/dummy_image_{i+1}.jpg',
-                'type': game_type
-            })
+            # Get equal number of real and AI images
+            half_count = max(image_count // 2, 1)
+            print(f"Fetching {half_count} real images and {half_count} AI images")
+            
+            real_images = get_images_rand(half_count, 'real')
+            print(f"Got {len(real_images)} real images")
+            
+            ai_images = get_images_rand(half_count, 'ai')
+            print(f"Got {len(ai_images)} AI images")
+
+            # Format images with their types
+            image_data = (
+                [{'url': url, 'type': 'real'} for url in real_images] +
+                [{'url': url, 'type': 'ai'} for url in ai_images]
+            )
+            
+            print(f"Total images after combining: {len(image_data)}")
+            random.shuffle(image_data)
+
+            # Store game session
+            self.active_games[game_id] = {
+                'game_id': game_id,
+                'user_id': user_id,
+                'type': 'classic',
+                'image_count': len(image_data),
+                'selected_images': image_data,
+                'status': 'active',
+                'created_at': datetime.datetime.now(),
+                'last_accessed': datetime.datetime.now()
+            }
+
+            print(f"Classic game initialized with {len(image_data)} images")
+            return game_id, image_data
+
+        except Exception as e:
+            print(f"Error initializing classic game: {str(e)}")
+            raise
+
+    def get_game(self, game_id: str) -> Dict:
+        """
+        Get game session data
         
-        # Store game session
-        self.active_games[game_id] = {
-            'game_id': game_id,
-            'user_id': user_id,
-            'type': game_type,
-            'image_count': image_count,
-            'selected_images': image_data,
-            'status': 'active',
-            'created_at': datetime.datetime.now(),
-            'last_accessed': datetime.datetime.now()
-        }
+        Args:
+            game_id (str): The game's unique identifier
+            
+        Returns:
+            Dict: Game session data
+        """
+        game = self.active_games.get(game_id)
+        if not game:
+            raise ValueError(f"Game not found: {game_id}")
         
-        return game_id, image_data
+        game['last_accessed'] = datetime.datetime.now()
+        return game
+
+    def update_game_status(self, game_id: str, status: str) -> None:
+        """
+        Update game status
+        
+        Args:
+            game_id (str): The game's unique identifier
+            status (str): New status for the game
+        """
+        game = self.get_game(game_id)
+        game['status'] = status
+        game['last_accessed'] = datetime.datetime.now()

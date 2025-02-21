@@ -43,4 +43,4 @@ def get_image_url(image_name):
 
 def get_images_rand(count, type):
   images = Images.query.filter_by(image_type=type).order_by(func.random()).limit(count).all()
-  return [f"{request.host_url}api/images/view/{img.image_path}" for img in images]
+  return [f"{request.host_url}api/images/view{img.image_path}" for img in images]
