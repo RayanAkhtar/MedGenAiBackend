@@ -44,17 +44,65 @@ class Images(db.Model):
     upload_time = db.Column(db.DateTime, nullable=False)
 
 
+class GameImages(db.Model):
+    __tablename__ = 'game_images'
+
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.String(128), nullable=False)  # UUID from GameService
+    image_id = db.Column(db.Integer, db.ForeignKey('images.image_id'), nullable=False)
+    
+    image = db.relationship('Images', backref=db.backref('game_images', lazy=True))
+
+class Game(db.Model):
+    __tablename__ = 'games'
+
+    game_id = db.Column(db.Integer, primary_key=True)
+    game_mode = db.Column(db.String(50), nullable=False)
+    date_created = db.Column(db.DateTime, nullable=False)
+    game_board = db.Column(db.String(50), nullable=False)
+    game_status = db.Column(db.String(50), nullable=False)  # 'active', 'completed', 'expired'
+    expiry_date = db.Column(db.DateTime, nullable=True)  # When the game expires
+    created_by = db.Column(db.String(128), db.ForeignKey('users.user_id'), nullable=False)  # Creator of the game
+    
+    game_images = db.relationship('GameImages', backref=db.backref('games', lazy=True))
+
+
+class UserGameSession(db.Model):
+    """Tracks individual user sessions for each game"""
+    __tablename__ = 'user_game_sessions'
+
+    session_id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey('games.game_id'), nullable=False)
+    user_id = db.Column(db.String(128), db.ForeignKey('users.user_id'), nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False)
+    completion_time = db.Column(db.DateTime, nullable=True)
+    session_status = db.Column(db.String(50), nullable=False)  # 'active', 'completed', 'abandoned'
+    final_score = db.Column(db.Integer, nullable=True)
+    correct_guesses = db.Column(db.Integer, nullable=True)
+    total_guesses = db.Column(db.Integer, nullable=True)
+    time_taken = db.Column(db.Integer, nullable=True)
+
+    # Relationships
+    game = db.relationship('Game', backref=db.backref('user_sessions', lazy=True))
+    user = db.relationship('Users', backref=db.backref('game_sessions', lazy=True))
+
+
 class UserGuess(db.Model):
     __tablename__ = 'user_guesses'
 
     guess_id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('user_game_sessions.session_id'), nullable=False)
     image_id = db.Column(db.Integer, db.ForeignKey('images.image_id'), nullable=False)
     user_id = db.Column(db.String(128), db.ForeignKey('users.user_id'), nullable=False)
     user_guess_type = db.Column(db.String(50), nullable=False)
     date_of_guess = db.Column(db.DateTime, nullable=False)
+    is_correct = db.Column(db.Boolean, nullable=False)
+    time_taken = db.Column(db.Float, nullable=True)
 
-    image = db.relationship('Images', backref=db.backref('user_guesses', lazy=True))
-    user = db.relationship('Users', backref=db.backref('user_guesses', lazy=True))
+    # Relationships
+    session = db.relationship('UserGameSession', backref=db.backref('guesses', lazy=True))
+    image = db.relationship('Images', backref=db.backref('guesses', lazy=True))
+    user = db.relationship('Users', backref=db.backref('guesses', lazy=True))
 
 
 class FeedbackUser(db.Model):
