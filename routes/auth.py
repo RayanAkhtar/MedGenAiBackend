@@ -96,3 +96,4 @@ def get_user():
     except Exception as e:
         print(f"Error in get_user: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
