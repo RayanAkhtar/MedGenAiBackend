@@ -313,10 +313,12 @@ def get_users_by_tags():
     
     tag_names = request.args.getlist('tags')
     match_all = request.args.get('all', 'false').lower() == 'true'
+    sort_by = request.args.get('sort_by', 'level').lower()
+    desc = request.args.get('desc', 'true').lower() == 'true'
     if not tag_names:
         return jsonify({"error": "No tags provided"}), 400
 
-    return jsonify(filter_users_by_tags(tag_names, match_all))
+    return jsonify(filter_users_by_tags(tag_names, match_all, sort_by, desc))
 
 @bp.route('/admin/getUsers', methods=['GET'])
 def get_users_data():

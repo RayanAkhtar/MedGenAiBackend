@@ -663,7 +663,7 @@ def resolve_all_feedback_by_image(image_id: int):
         db.session.rollback()
         return {"error": str(e)}
 
-def filter_users_by_tags(tag_names, match_all=True):
+def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True):
     """
     Filters users based on tags, either matching ANY tag or ALL tags.
 
@@ -675,8 +675,8 @@ def filter_users_by_tags(tag_names, match_all=True):
     tag_names = [t.lower() for t in tag_names]
     query = db.session.query(
     		Users,
-    	func.count(UserGuess.guess_id).label("total_guesses"),
-    	func.count().filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
+    		func.count(UserGuess.guess_id).label("total_guesses"),
+    		func.count().filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
     ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)) \
      .join(UserGuess, UserGuess.user_id == Users.user_id, isouter = True) \
      .join(Images, Images.image_id == UserGuess.image_id, isouter = True) \
@@ -687,7 +687,7 @@ def filter_users_by_tags(tag_names, match_all=True):
     else:
         query = query.distinct()
 
-    return [{
+    data = [{
     	"username": user.username, 
     	"level": user.level, 
     	"games_started": user.games_started, 
@@ -695,3 +695,5 @@ def filter_users_by_tags(tag_names, match_all=True):
     	"accuracy": round((correct_guesses / total_guesses * 100) if total_guesses else 0, 2), 
     	"engagement": total_guesses
     	} for user, total_guesses, correct_guesses in query.all()]
+    	
+    return sorted(data, key = lambda x: x[sort_by], reverse = desc)
