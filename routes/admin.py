@@ -25,7 +25,7 @@ from services.admin import (
     resolve_all_feedback_by_image,
     filter_users_by_tags
 )
-from services.admin_user import get_users_with_filters
+from services.admin_user import get_user_data_by_username, get_users_with_filters
 
 bp = Blueprint('admin', __name__)
 
@@ -313,10 +313,12 @@ def get_users_by_tags():
     
     tag_names = request.args.getlist('tags')
     match_all = request.args.get('all', 'false').lower() == 'true'
+    sort_by = request.args.get('sort_by', 'level').lower()
+    desc = request.args.get('desc', 'true').lower() == 'true'
     if not tag_names:
         return jsonify({"error": "No tags provided"}), 400
 
-    return jsonify(filter_users_by_tags(tag_names, match_all))
+    return jsonify(filter_users_by_tags(tag_names, match_all, sort_by, desc))
 
 @bp.route('/admin/getUsers', methods=['GET'])
 def get_users_data():
@@ -346,3 +348,7 @@ def get_users_data():
     return jsonify(feedback_data)
 
 
+@bp.route('/admin/getUsers/<username>', methods=['GET'])
+def get_user_by_id(username):
+    user_data = get_user_data_by_username(username)
+    return jsonify(user_data)
