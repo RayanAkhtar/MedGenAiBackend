@@ -178,3 +178,5 @@ medgenaifirebase.json
 
 #Migrations
 /migrations
+
+*.pem
