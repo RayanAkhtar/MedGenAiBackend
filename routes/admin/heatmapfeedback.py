@@ -11,7 +11,6 @@ from services.admin.heatmapfeedback import (
 bp = Blueprint('adminHeatmap', __name__)
 
 
-
 @bp.route('/admin/getImageById/<image_id>', methods=['GET'])
 def get_image_by_id_route(image_id):
     image_data = get_image_by_id(image_id)
