@@ -15,13 +15,15 @@ from services.admin.admin import (
 )
 from services.admin_user import get_user_data_by_username, get_users_with_filters
 
-# Do not delete these routes below, they are needed for the blueprint
-from routes.admin import (
-    download,
-    metrics,
-    feedbackpage,
-    heatmapfeedback
-)
+from routes.admin.download import register_download_routes
+from routes.admin.feedbackpage import registerFeedbackRoutes
+from routes.admin.heatmapfeedback import registerHeatmapRoutes
+from routes.admin.metrics import registerMetricsBlueprints
+
+register_download_routes()
+registerFeedbackRoutes()
+registerHeatmapRoutes()
+registerMetricsBlueprints()
 
 bp = Blueprint('admin', __name__)
 

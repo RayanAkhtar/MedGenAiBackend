@@ -4,7 +4,6 @@ from __init__ import db
 from sqlalchemy import text
 from services.admin.admin import get_metadata_counts
 
-from routes.admin.admin import bp
 
 # TODO: move some of this to services for simplicity
 
@@ -36,103 +35,107 @@ def convert_to_csv(data):
     csv_data = ','.join(header) + '\n' + '\n'.join(rows)
     return csv_data
 
-@bp.route('/admin/downloadFeedbackData', methods=['GET'])
-def download_feedback_data():
-    try:
-        if not os.path.exists('./downloads'):
-            os.makedirs('./downloads')
+def register_download_routes():
 
-        data = fetch_data_for_csv('feedback')
-        csv_data = convert_to_csv(data)
-        file_path = './downloads/feedback_data.csv'
+    from routes.admin.admin import bp
 
-        with open(file_path, 'w') as file:
-            file.write(csv_data)
+    @bp.route('/admin/downloadFeedbackData', methods=['GET'])
+    def download_feedback_data():
+        try:
+            if not os.path.exists('./downloads'):
+                os.makedirs('./downloads')
 
-        print("wrote the file")
+            data = fetch_data_for_csv('feedback')
+            csv_data = convert_to_csv(data)
+            file_path = './downloads/feedback_data.csv'
 
-        return send_from_directory('downloads', 'feedback_data.csv', as_attachment=True)
+            with open(file_path, 'w') as file:
+                file.write(csv_data)
 
-    except Exception as e:
-        print("exception", e)
-        return str(e), 500
-    
+            print("wrote the file")
 
+            return send_from_directory('downloads', 'feedback_data.csv', as_attachment=True)
 
-@bp.route('/admin/downloadImageData', methods=['GET'])
-def download_image_data():
-    try:
-        data = fetch_data_for_csv('images')
-        csv_data = convert_to_csv(data)
-        file_path = os.path.join('downloads', 'image_data.csv')
-
-        with open(file_path, 'w') as file:
-            file.write(csv_data)
-
-        return send_from_directory('downloads', 'image_data.csv', as_attachment=True)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        except Exception as e:
+            print("exception", e)
+            return str(e), 500
+        
 
 
-@bp.route('/admin/downloadLeaderboard', methods=['GET'])
-def download_leaderboard_data():
-    try:
-        data = fetch_data_for_csv('users')
-        csv_data = convert_to_csv(data)
-        file_path = os.path.join('downloads', 'leaderboard_data.csv')
+    @bp.route('/admin/downloadImageData', methods=['GET'])
+    def download_image_data():
+        try:
+            data = fetch_data_for_csv('images')
+            csv_data = convert_to_csv(data)
+            file_path = os.path.join('downloads', 'image_data.csv')
 
-        with open(file_path, 'w') as file:
-            file.write(csv_data)
+            with open(file_path, 'w') as file:
+                file.write(csv_data)
 
-        return send_from_directory('downloads', 'leaderboard_data.csv', as_attachment=True)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+            return send_from_directory('downloads', 'image_data.csv', as_attachment=True)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
 
-@bp.route('/admin/downloadCompetitionData', methods=['GET'])
-def download_competition_data():
-    try:
-        data = fetch_data_for_csv('competitions')
-        csv_data = convert_to_csv(data)
-        file_path = os.path.join('downloads', 'competition_data.csv')
+    @bp.route('/admin/downloadLeaderboard', methods=['GET'])
+    def download_leaderboard_data():
+        try:
+            data = fetch_data_for_csv('users')
+            csv_data = convert_to_csv(data)
+            file_path = os.path.join('downloads', 'leaderboard_data.csv')
 
-        with open(file_path, 'w') as file:
-            file.write(csv_data)
+            with open(file_path, 'w') as file:
+                file.write(csv_data)
 
-        return send_from_directory('downloads', 'competition_data.csv', as_attachment=True)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
+            return send_from_directory('downloads', 'leaderboard_data.csv', as_attachment=True)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
-@bp.route('/admin/feedbackCount', methods=['GET'])
-def feedback_count():
-    try:
-        count = get_metadata_counts().get('feedback', 0)
-        return jsonify({'count': count})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
-@bp.route('/admin/imageCount', methods=['GET'])
-def image_count():
-    try:
-        count = get_metadata_counts().get('image', 0)
-        return jsonify({'count': count})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    @bp.route('/admin/downloadCompetitionData', methods=['GET'])
+    def download_competition_data():
+        try:
+            data = fetch_data_for_csv('competitions')
+            csv_data = convert_to_csv(data)
+            file_path = os.path.join('downloads', 'competition_data.csv')
 
-@bp.route('/admin/leaderboardCount', methods=['GET'])
-def leaderboard_count():
-    try:
-        count = get_metadata_counts().get('leaderboard', 0)
-        return jsonify({'count': count})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+            with open(file_path, 'w') as file:
+                file.write(csv_data)
 
-@bp.route('/admin/competitionCount', methods=['GET'])
-def competition_count():
-    try:
-        count = get_metadata_counts().get('competition', 0)
-        return jsonify({'count': count})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
+            return send_from_directory('downloads', 'competition_data.csv', as_attachment=True)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+        
+
+    @bp.route('/admin/feedbackCount', methods=['GET'])
+    def feedback_count():
+        try:
+            count = get_metadata_counts().get('feedback', 0)
+            return jsonify({'count': count})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @bp.route('/admin/imageCount', methods=['GET'])
+    def image_count():
+        try:
+            count = get_metadata_counts().get('image', 0)
+            return jsonify({'count': count})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @bp.route('/admin/leaderboardCount', methods=['GET'])
+    def leaderboard_count():
+        try:
+            count = get_metadata_counts().get('leaderboard', 0)
+            return jsonify({'count': count})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @bp.route('/admin/competitionCount', methods=['GET'])
+    def competition_count():
+        try:
+            count = get_metadata_counts().get('competition', 0)
+            return jsonify({'count': count})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+        
