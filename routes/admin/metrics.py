@@ -11,6 +11,15 @@ from services.admin.metrics import (
 bp = Blueprint('adminMetrics', __name__)
 
 
+@bp.route('/admin/getImageDetectionAccuracy', methods=['GET'])
+def get_image_detection_accuracy_route():
+    return jsonify(get_image_detection_accuracy())
+
+@bp.route('/admin/getConfusionMatrix', methods=['GET'])
+def get_confusion_matrix_route():
+    return jsonify(get_confusion_matrix())
+
+
 @bp.route('/admin/getMLMetrics', methods=['GET'])
 def get_ml_metrics_route():
     try:
