@@ -8,7 +8,7 @@ from services.admin.heatmapfeedback import (
     get_matching_feedback_for_image
 )
 
-from routes.admin.admin import bp
+bp = Blueprint('adminHeatmap', __name__)
 
 
 

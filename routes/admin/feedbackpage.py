@@ -5,7 +5,7 @@ from services.admin.feedbackpage import (
     resolve_all_feedback_by_image
 )
 
-from routes.admin.admin import bp
+bp = Blueprint('adminFeedback', __name__)
 
 
 @bp.route('/admin/getFeedbacks', methods=['GET'])
