@@ -1,7 +1,8 @@
 # services/admin.py
 
 from __init__ import db
-from sqlalchemy import text, bindparam
+from models import *
+from sqlalchemy import text, bindparam, func
 from datetime import datetime 
 import os
 from flask import jsonify, flash
@@ -554,8 +555,6 @@ def get_metadata_counts():
         db.session.rollback()
         return {"error": str(e)}
 
-
-
 UPLOAD_FOLDER = '../MedGenAI-Images/Images/'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -663,3 +662,38 @@ def resolve_all_feedback_by_image(image_id: int):
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
+def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True):
+    """
+    Filters users based on tags, either matching ANY tag or ALL tags.
+
+    :param tag_names: List of tag names to filter users by.
+    :param match_all: If True, returns users with ALL tags. 
+                      If False, returns users with ANY tag.
+    :return: List of user objects.
+    """
+    tag_names = [t.lower() for t in tag_names]
+    query = db.session.query(
+    		Users,
+    		func.count(func.distinct(UserGuess.guess_id)).label("total_guesses"),
+    		func.count(func.distinct(UserGuess.guess_id)).filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
+    ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)) \
+     .join(UserGuess, UserGuess.user_id == Users.user_id, isouter = True) \
+     .join(Images, Images.image_id == UserGuess.image_id, isouter = True) \
+     .group_by(Users.user_id)
+
+    if match_all:
+        query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
+    else:
+        query = query.distinct()
+
+    data = [{
+    	"username": user.username, 
+    	"level": user.level, 
+    	"games_started": user.games_started, 
+    	"score": user.score, 
+    	"accuracy": round((correct_guesses / total_guesses * 100) if total_guesses else 0, 2), 
+    	"engagement": total_guesses
+    	} for user, total_guesses, correct_guesses in query.all()]
+    	
+    return sorted(data, key = lambda x: x[sort_by], reverse = desc)

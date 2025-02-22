@@ -22,8 +22,10 @@ from services.admin import (
     get_metadata_counts,
     get_feedback_count,
     upload_image_service,
-    resolve_all_feedback_by_image
+    resolve_all_feedback_by_image,
+    filter_users_by_tags
 )
+from services.admin_user import get_user_data_by_username, get_users_with_filters
 
 bp = Blueprint('admin', __name__)
 
@@ -59,7 +61,6 @@ def get_matching_feedback_for_image_route(image_id):
 @bp.route('/admin/getRandomUnresolvedFeedback/<image_id>', methods=['GET'])
 def get_random_unresolved_feedback_route(image_id):
     return jsonify(get_random_unresolved_feedback(image_id))
-
 
 
 @bp.route('/admin/uploadRealImage', methods=['POST'])
@@ -306,4 +307,48 @@ def resolve_all_feedback_by_image_route(image_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@bp.route('/admin/filter-users', methods=['GET'])
+def get_users_by_tags():
+    """API to return users filtered by tags."""
+    
+    tag_names = request.args.getlist('tags')
+    match_all = request.args.get('all', 'false').lower() == 'true'
+    sort_by = request.args.get('sort_by', 'level').lower()
+    desc = request.args.get('desc', 'true').lower() == 'true'
+    if not tag_names:
+        return jsonify({"error": "No tags provided"}), 400
 
+    return jsonify(filter_users_by_tags(tag_names, match_all, sort_by, desc))
+
+@bp.route('/admin/getUsers', methods=['GET'])
+def get_users_data():
+    level = request.args.get('level')
+    min_games_won = request.args.get('min_games_won')
+    max_games_won = request.args.get('max_games_won')
+    min_score = request.args.get('min_score')
+    max_score = request.args.get('max_score')
+    sort_by = request.args.get('sort_by') 
+    sort_order = request.args.get('sort_order', 'asc')
+
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 20, type=int)
+
+    feedback_data = get_users_with_filters(
+        level=level,
+        min_games_won=min_games_won,
+        max_games_won=max_games_won,
+        max_score=max_score,
+        min_score=min_score,
+        sort_by=sort_by,
+        sort_order=sort_order, 
+        limit=limit, 
+        offset=(page - 1) * limit
+    )
+
+    return jsonify(feedback_data)
+
+
+@bp.route('/admin/getUsers/<username>', methods=['GET'])
+def get_user_by_id(username):
+    user_data = get_user_data_by_username(username)
+    return jsonify(user_data)

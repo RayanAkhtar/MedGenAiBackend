@@ -176,7 +176,8 @@ testscript.py
 
 medgenaifirebase.json
 
-#Migrations
+#SQL stuff
 /migrations
 
 *.pem
+*.sql
