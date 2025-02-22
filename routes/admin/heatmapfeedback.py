@@ -8,7 +8,7 @@ from services.admin.heatmapfeedback import (
     get_matching_feedback_for_image
 )
 
-from admin import bp
+from routes.admin.admin import bp
 
 
 

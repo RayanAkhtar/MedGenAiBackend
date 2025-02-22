@@ -8,7 +8,7 @@ from services.admin.metrics import (
     get_image_difficulty
 )
 
-from admin import bp
+from routes.admin.admin import bp
 
 
 @bp.route('/admin/getImageDetectionAccuracy', methods=['GET'])

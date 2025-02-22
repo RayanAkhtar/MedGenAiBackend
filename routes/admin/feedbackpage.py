@@ -5,7 +5,7 @@ from services.admin.feedbackpage import (
     resolve_all_feedback_by_image
 )
 
-from admin import bp
+from routes.admin.admin import bp
 
 
 @bp.route('/admin/getFeedbacks', methods=['GET'])
