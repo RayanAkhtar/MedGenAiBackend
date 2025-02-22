@@ -4,7 +4,7 @@ from __init__ import db
 from sqlalchemy import text
 from services.admin.admin import get_metadata_counts
 
-bp = Blueprint('admin', __name__)
+from admin import bp
 
 # TODO: move some of this to services for simplicity
 

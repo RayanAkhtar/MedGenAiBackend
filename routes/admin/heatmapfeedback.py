@@ -8,9 +8,9 @@ from services.admin.heatmapfeedback import (
     get_matching_feedback_for_image
 )
 
+from admin import bp
 
 
-bp = Blueprint('admin', __name__)
 
 @bp.route('/admin/getImageById/<image_id>', methods=['GET'])
 def get_image_by_id_route(image_id):

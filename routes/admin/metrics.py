@@ -8,8 +8,7 @@ from services.admin.metrics import (
     get_image_difficulty
 )
 
-
-bp = Blueprint('admin', __name__)
+from admin import bp
 
 
 @bp.route('/admin/getImageDetectionAccuracy', methods=['GET'])
