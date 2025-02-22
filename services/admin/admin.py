@@ -9,6 +9,30 @@ from flask import jsonify, flash
 from werkzeug.utils import secure_filename
 from decimal import Decimal
 
+def get_metadata_counts():
+    try:
+        queries = {
+            'feedback': "SELECT COUNT(*) FROM feedback_users",
+            'image': "SELECT COUNT(*) FROM images",
+            'leaderboard': "SELECT COUNT(*) FROM user_guesses",
+            'competition': "SELECT COUNT(*) FROM competitions" 
+        }
+
+        counts = {}
+
+
+        for table, query in queries.items():
+            result = db.session.execute(text(query))
+            db.session.commit()
+            count = result.fetchone()[0]
+            counts[table] = count
+
+        return counts
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
+
 def get_guesses_per_month():
     try:
         query = text("""

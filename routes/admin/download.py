@@ -2,7 +2,7 @@ from flask import jsonify, send_from_directory, Blueprint
 import os
 from __init__ import db
 from sqlalchemy import text
-
+from services.admin.admin import get_metadata_counts
 
 bp = Blueprint('admin', __name__)
 
@@ -35,39 +35,6 @@ def convert_to_csv(data):
     rows = [','.join(str(value) for value in row.values()) for row in data]
     csv_data = ','.join(header) + '\n' + '\n'.join(rows)
     return csv_data
-
-
-def get_metadata_counts():
-    try:
-        queries = {
-            'feedback': "SELECT COUNT(*) FROM feedback_users",
-            'image': "SELECT COUNT(*) FROM images",
-            'leaderboard': "SELECT COUNT(*) FROM user_guesses",
-            'competition': "SELECT COUNT(*) FROM competitions" 
-        }
-
-        counts = {}
-
-
-        for table, query in queries.items():
-            result = db.session.execute(text(query))
-            db.session.commit()
-            count = result.fetchone()[0]
-            counts[table] = count
-
-        return counts
-
-    except Exception as e:
-        db.session.rollback()
-        return {"error": str(e)}
-
-
-
-
-
-
-
-
 
 @bp.route('/admin/downloadFeedbackData', methods=['GET'])
 def download_feedback_data():

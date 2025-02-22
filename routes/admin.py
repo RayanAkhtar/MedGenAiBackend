@@ -2,16 +2,16 @@ from flask import Blueprint, jsonify, request, flash, send_from_directory
 import os
 from werkzeug.utils import secure_filename
 from __init__ import db
-from services.admin import (
+from services.admin.admin import (
     get_guesses_per_month,
     get_feedback_instances,
     get_total_real_images,
     get_total_ai_images,
     get_feedback_resolution_status,
     get_random_unresolved_feedback,
-    get_metadata_counts,
     upload_image_service,
-    filter_users_by_tags
+    filter_users_by_tags,
+    get_metadata_counts
 )
 from services.admin_user import get_user_data_by_username, get_users_with_filters
 
