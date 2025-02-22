@@ -38,26 +38,13 @@ def create_app(test_config=None):
         from routes import bp
         from routes.profile import bp as profile_bp
         from routes.images import bp as image_bp
-
         from routes.admin.admin import bp as admin_bp
-        from routes.admin.download import bp as admin_download_bp
-        from routes.admin.feedbackpage import bp as admin_feedback_bp
-        from routes.admin.heatmapfeedback import bp as admin_heatmap_bp
-        from routes.admin.metrics import bp as admin_metrics_bp
-
         from routes.game import  game_bp
         from middleware.auth import auth_bp
         from routes.auth import auth_signup_bp
         app.register_blueprint(bp)
         app.register_blueprint(profile_bp)
-
         app.register_blueprint(admin_bp)
-        app.register_blueprint(admin_download_bp)
-        app.register_blueprint(admin_feedback_bp)
-        app.register_blueprint(admin_heatmap_bp)
-        app.register_blueprint(admin_metrics_bp)
-
-
         app.register_blueprint(image_bp)
         app.register_blueprint(game_bp, url_prefix='/game')
         app.register_blueprint(auth_bp)
