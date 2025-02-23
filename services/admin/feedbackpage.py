@@ -17,7 +17,11 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
                 images.image_type,
                 COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) AS unresolved_count,
                 MAX(feedback.date_added) AS last_feedback_time,
-                images.upload_time
+                images.upload_time,
+                images.gender,
+                images.race,
+                images.age, 
+                images.disease
             FROM images
             LEFT JOIN user_guesses ON user_guesses.image_id = images.image_id
             LEFT JOIN feedback_users ON feedback_users.guess_id = user_guesses.guess_id
@@ -91,6 +95,10 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
                     row['upload_time'].strftime('%Y-%m-%d')
                     if isinstance(row['upload_time'], datetime) else row['upload_time']
                 ),
+                'gender': row['gender'],
+                'race': row['race'],
+                'age': row['age'],
+                'disease': row['disease'],
             })
 
         return feedback_data
