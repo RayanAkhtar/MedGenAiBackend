@@ -1,6 +1,6 @@
 from __init__ import db
 from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags
-from sqlalchemy import func, desc, text
+from sqlalchemy import func, desc, text, case
 from datetime import datetime
 import os
 from flask import jsonify, flash
@@ -52,11 +52,12 @@ def get_total_real_images():
         result = db.session.query(
             func.count(Images.image_id).label("totalReal"),
             func.coalesce(
-                (func.sum(func.case(
+                func.sum(
+                    case(
                         [(UserGuess.user_guess_type == 'real', 1)],
                         else_=0
                     )
-                )) * 1.0 / func.count(UserGuess.guess_id),
+                ) * 1.0 / func.count(UserGuess.guess_id),
                 0
             ).label("percentageDetected")
         ).outerjoin(UserGuess, UserGuess.image_id == Images.image_id
@@ -67,15 +68,18 @@ def get_total_real_images():
         db.session.rollback()
         return {"error": str(e)}
 
+
 def get_total_ai_images():
     try:
         result = db.session.query(
             func.count(Images.image_id).label("totalAI"),
             func.coalesce(
-                func.sum(func.case(
-                    [(UserGuess.user_guess_type == 'ai', 1)],
-                    else_=0
-                )) * 1.0 / func.count(UserGuess.guess_id),
+                func.sum(
+                    case(
+                        [(UserGuess.user_guess_type == 'ai', 1)],
+                        else_=0
+                    )
+                ) * 1.0 / func.count(UserGuess.guess_id),
                 0
             ).label("percentageDetected")
         ).outerjoin(UserGuess, UserGuess.image_id == Images.image_id
@@ -85,6 +89,7 @@ def get_total_ai_images():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
 
 
 def get_feedback_resolution_status():
