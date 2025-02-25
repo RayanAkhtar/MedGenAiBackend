@@ -43,16 +43,16 @@ def get_image_confusion_matrix(image_id):
         result = (
             db.session.query(
                 func.sum(case(
-                    [(UserGuess.user_guess_type == 'real', Images.image_type == 'real')], 
+                    (UserGuess.user_guess_type == 'real', Images.image_type == 'real'), 
                     else_=0)).label('truePositive'),
                 func.sum(case(
-                    [(UserGuess.user_guess_type == 'ai', Images.image_type == 'real')], 
+                    (UserGuess.user_guess_type == 'ai', Images.image_type == 'real'), 
                     else_=0)).label('falsePositive'),
                 func.sum(case(
-                    [(UserGuess.user_guess_type == 'real', Images.image_type == 'ai')], 
+                    (UserGuess.user_guess_type == 'real', Images.image_type == 'ai'), 
                     else_=0)).label('falseNegative'),
                 func.sum(case(
-                    [(UserGuess.user_guess_type == 'ai', Images.image_type == 'ai')], 
+                    (UserGuess.user_guess_type == 'ai', Images.image_type == 'ai'), 
                     else_=0)).label('trueNegative')
             )
             .join(Images, UserGuess.image_id == Images.image_id)
