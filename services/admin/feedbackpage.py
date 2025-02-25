@@ -1,20 +1,25 @@
 from __init__ import db
 from models import Images, Feedback, FeedbackUser, UserGuess
 from sqlalchemy import func, case, desc, asc, text
+from sqlalchemy.orm import aliased
 
 def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort_order='asc', limit=20, offset=0):
     try:
+        # Alias for Feedback table to avoid duplication due to joins
+        feedback_alias = aliased(Feedback)
+
         # Base query
         query = (
             db.session.query(
                 Images.image_id,
                 Images.image_path,
                 Images.image_type,
+                # Use a subquery to count unresolved feedback
                 func.count(case(
-                    (func.coalesce(Feedback.resolved, False) == False, 1), 
-                    else_=0
+                    (func.coalesce(feedback_alias.resolved, False) == False, 1), 
+                    else_=None
                 )).label("unresolved_count"),
-                func.max(Feedback.date_added).label("last_feedback_time"),
+                func.max(feedback_alias.date_added).label("last_feedback_time"),
                 Images.upload_time,
                 Images.gender,
                 Images.race,
@@ -23,8 +28,11 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
             )
             .outerjoin(UserGuess, UserGuess.image_id == Images.image_id)
             .outerjoin(FeedbackUser, FeedbackUser.guess_id == UserGuess.guess_id)
-            .outerjoin(Feedback, Feedback.feedback_id == FeedbackUser.feedback_id)
-            .group_by(Images.image_id, Images.image_path, Images.image_type, Images.upload_time, Images.gender, Images.race, Images.age, Images.disease)
+            .outerjoin(feedback_alias, feedback_alias.feedback_id == FeedbackUser.feedback_id)
+            .group_by(
+                Images.image_id, Images.image_path, Images.image_type, 
+                Images.upload_time, Images.gender, Images.race, Images.age, Images.disease
+            )
         )
 
         # Apply filters
@@ -34,21 +42,21 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
         if resolved is not None:
             if resolved:
                 query = query.having(func.count(case(
-                    (func.coalesce(Feedback.resolved, False) == False, 1), 
-                    else_=0
+                    (func.coalesce(feedback_alias.resolved, False) == False, 1),
+                    else_=None
                 )) == 0)
             else:
                 query = query.having(func.count(case(
-                    (func.coalesce(Feedback.resolved, False) == False, 1), 
-                    else_=0
+                    (func.coalesce(feedback_alias.resolved, False) == False, 1),
+                    else_=None
                 )) > 0)
 
         # Sorting
         valid_sort_fields = {
-            'last_feedback_time': func.max(Feedback.date_added),
+            'last_feedback_time': func.max(feedback_alias.date_added),
             'unresolved_count': func.count(case(
-                (func.coalesce(Feedback.resolved, False) == False, 1), 
-                else_=0
+                (func.coalesce(feedback_alias.resolved, False) == False, 1), 
+                else_=None
             )),
             'upload_time': Images.upload_time,
             'image_id': Images.image_id,
@@ -58,7 +66,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
             order_func = asc if sort_order.lower() == 'asc' else desc
             query = query.order_by(order_func(valid_sort_fields[sort_by]))
         else:
-            query = query.order_by(desc(func.max(Feedback.date_added)))  # Default sorting
+            query = query.order_by(desc(func.max(feedback_alias.date_added)))
 
         # Apply limit and offset for pagination
         query = query.limit(limit).offset(offset)
