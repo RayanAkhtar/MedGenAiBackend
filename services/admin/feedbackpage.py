@@ -1,7 +1,6 @@
 from __init__ import db
 from models import Images, Feedback, FeedbackUser, UserGuess
-from sqlalchemy import func, case, desc, asc
-
+from sqlalchemy import func, case, desc, asc, text
 
 def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort_order='asc', limit=20, offset=0):
     try:
@@ -11,7 +10,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
                 Images.image_id,
                 Images.image_path,
                 Images.image_type,
-                func.count(case((Feedback.resolved == False, 1))).label("unresolved_count"),
+                func.count(case([(Feedback.resolved == False, 1)]), else_=0).label("unresolved_count"),
                 func.max(Feedback.date_added).label("last_feedback_time"),
                 Images.upload_time,
                 Images.gender,
@@ -22,7 +21,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
             .outerjoin(UserGuess, UserGuess.image_id == Images.image_id)
             .outerjoin(FeedbackUser, FeedbackUser.guess_id == UserGuess.guess_id)
             .outerjoin(Feedback, Feedback.feedback_id == FeedbackUser.feedback_id)
-            .group_by(Images.image_id, Images.image_path, Images.image_type, Images.upload_time)
+            .group_by(Images.image_id, Images.image_path, Images.image_type, Images.upload_time, Images.gender, Images.race, Images.age, Images.disease)
         )
 
         # Apply filters
@@ -31,14 +30,14 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
 
         if resolved is not None:
             if resolved:
-                query = query.having(func.count(case((Feedback.resolved == False, 1))) == 0)
+                query = query.having(func.count(case([(Feedback.resolved == False, 1)]), else_=0) == 0)
             else:
-                query = query.having(func.count(case((Feedback.resolved == False, 1))) > 0)
+                query = query.having(func.count(case([(Feedback.resolved == False, 1)]), else_=0) > 0)
 
         # Sorting
         valid_sort_fields = {
             'last_feedback_time': func.max(Feedback.date_added),
-            'unresolved_count': func.count(case((Feedback.resolved == False, 1))),
+            'unresolved_count': func.count(case([(Feedback.resolved == False, 1)]), else_=0),
             'upload_time': Images.upload_time,
             'image_id': Images.image_id,
         }

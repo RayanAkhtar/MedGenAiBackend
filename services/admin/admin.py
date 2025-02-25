@@ -37,7 +37,7 @@ def get_guesses_per_month():
 def get_feedback_instances():
     try:
         result = db.session.query(
-            func.strftime('%Y-%m', UserGuess.date_of_guess).label("month"),
+            func.to_char(UserGuess.date_of_guess, 'YYYY-MM').label("month"),
             func.count().label("feedbackCount")
         ).join(FeedbackUser, FeedbackUser.guess_id == UserGuess.guess_id
                ).group_by("month").order_by("month").all()

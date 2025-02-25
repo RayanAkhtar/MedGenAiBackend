@@ -1,7 +1,6 @@
 from __init__ import db
 from models import Images, Feedback, FeedbackUser, UserGuess
-from sqlalchemy import func, case
-
+from sqlalchemy import func, case, text
 
 def get_image_by_id(image_id):
     try:
@@ -43,10 +42,18 @@ def get_image_confusion_matrix(image_id):
     try:
         result = (
             db.session.query(
-                func.sum(case((UserGuess.user_guess_type == 'real', Images.image_type == 'real'), else_=0)).label('truePositive'),
-                func.sum(case((UserGuess.user_guess_type == 'ai', Images.image_type == 'real'), else_=0)).label('falsePositive'),
-                func.sum(case((UserGuess.user_guess_type == 'real', Images.image_type == 'ai'), else_=0)).label('falseNegative'),
-                func.sum(case((UserGuess.user_guess_type == 'ai', Images.image_type == 'ai'), else_=0)).label('trueNegative')
+                func.sum(case(
+                    [(UserGuess.user_guess_type == 'real', Images.image_type == 'real')], 
+                    else_=0)).label('truePositive'),
+                func.sum(case(
+                    [(UserGuess.user_guess_type == 'ai', Images.image_type == 'real')], 
+                    else_=0)).label('falsePositive'),
+                func.sum(case(
+                    [(UserGuess.user_guess_type == 'real', Images.image_type == 'ai')], 
+                    else_=0)).label('falseNegative'),
+                func.sum(case(
+                    [(UserGuess.user_guess_type == 'ai', Images.image_type == 'ai')], 
+                    else_=0)).label('trueNegative')
             )
             .join(Images, UserGuess.image_id == Images.image_id)
             .filter(Images.image_id == image_id)
