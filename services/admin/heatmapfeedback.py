@@ -40,33 +40,61 @@ def get_matching_feedback_for_image(image_id):
 
 def get_image_confusion_matrix(image_id):
     try:
-        result = (
-            db.session.query(
-                func.sum(case(
-                    (UserGuess.user_guess_type == 'real', Images.image_type == 'real'), 
-                    else_=0)).label('truePositive'),
-                func.sum(case(
-                    (UserGuess.user_guess_type == 'ai', Images.image_type == 'real'), 
-                    else_=0)).label('falsePositive'),
-                func.sum(case(
-                    (UserGuess.user_guess_type == 'real', Images.image_type == 'ai'), 
-                    else_=0)).label('falseNegative'),
-                func.sum(case(
-                    (UserGuess.user_guess_type == 'ai', Images.image_type == 'ai'), 
-                    else_=0)).label('trueNegative')
-            )
+        true_positive = (
+            db.session.query(func.sum(
+                case(
+                    [(UserGuess.user_guess_type == 'real', 1)], 
+                    else_=0
+                )
+            ).label('truePositive'))
             .join(Images, UserGuess.image_id == Images.image_id)
-            .filter(Images.image_id == image_id)
-            .first()
-        )
+            .filter(Images.image_id == image_id, UserGuess.user_guess_type == Images.image_type)  # Ensure matching types
+            .scalar()
+        ) or 0
+        false_positive = (
+            db.session.query(func.sum(
+                case(
+                    [(UserGuess.user_guess_type == 'ai', 1)], 
+                    else_=0
+                )
+            ).label('falsePositive'))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(Images.image_id == image_id, UserGuess.user_guess_type != Images.image_type)  # Ensure mismatched types
+            .scalar()
+        ) or 0
+
+
+        false_negative = (
+            db.session.query(func.sum(
+                case(
+                    [(UserGuess.user_guess_type == 'real', 1)], 
+                    else_=0
+                )
+            ).label('falseNegative'))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(Images.image_id == image_id, UserGuess.user_guess_type != Images.image_type)  # Ensure mismatched types
+            .scalar()
+        ) or 0
+        true_negative = (
+            db.session.query(func.sum(
+                case(
+                    [(UserGuess.user_guess_type == 'ai', 1)], 
+                    else_=0
+                )
+            ).label('trueNegative'))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(Images.image_id == image_id, UserGuess.user_guess_type == Images.image_type)  # Ensure matching types
+            .scalar()
+        ) or 0
 
         return {
-            "truePositive": result.truePositive or 0,
-            "falsePositive": result.falsePositive or 0,
-            "falseNegative": result.falseNegative or 0,
-            "trueNegative": result.trueNegative or 0
-        } if result else {"error": "No data found"}
+            "truePositive": true_positive,
+            "falsePositive": false_positive,
+            "falseNegative": false_negative,
+            "trueNegative": true_negative
+        }
 
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
