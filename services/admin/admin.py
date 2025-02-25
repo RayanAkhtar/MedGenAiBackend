@@ -26,7 +26,7 @@ def get_guesses_per_month():
             func.to_char(UserGuess.date_of_guess, 'YYYY-MM').label("month"),
             func.count().label("guess_count")
         ).filter(
-            UserGuess.date_of_guess >= func.now() - func.interval('12 months')
+            UserGuess.date_of_guess >= func.now() - text("INTERVAL '12 months'")
         ).group_by("month").order_by("month").all()
 
         return [{"month": row.month, "guess_count": row.guess_count} for row in result]
