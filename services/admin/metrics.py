@@ -29,35 +29,52 @@ def get_image_detection_accuracy():
 
 def get_confusion_matrix():
     try:
-
         true_positive = (
             db.session.query(func.sum(
-                (UserGuess.user_guess_type == 'real') & (UserGuess.user_guess_type == Images.image_type)
-            ).cast(db.Integer))
+                case(
+                    (UserGuess.user_guess_type == 'real', 1), 
+                    else_=0
+                )
+            ).label('truePositive'))
             .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == Images.image_type)
             .scalar()
         ) or 0
         false_positive = (
             db.session.query(func.sum(
-                (UserGuess.user_guess_type == 'ai') & (UserGuess.user_guess_type != Images.image_type)
-            ).cast(db.Integer))
+                case(
+                    [(UserGuess.user_guess_type == 'ai', 1)], 
+                    else_=0
+                )
+            ).label('falsePositive'))
             .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type != Images.image_type)
             .scalar()
         ) or 0
 
 
         false_negative = (
             db.session.query(func.sum(
-                (UserGuess.user_guess_type == 'real') & (UserGuess.user_guess_type != Images.image_type)
-            ).cast(db.Integer))
+                case(
+                    [(UserGuess.user_guess_type == 'real', 1)], 
+                    else_=0
+                )
+            ).label('falseNegative'))
             .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type != Images.image_type)
             .scalar()
         ) or 0
+
+
         true_negative = (
             db.session.query(func.sum(
-                (UserGuess.user_guess_type == 'ai') & (UserGuess.user_guess_type == Images.image_type)
-            ).cast(db.Integer))
+                case(
+                    (UserGuess.user_guess_type == 'ai', 1), 
+                    else_=0
+                )
+            ).label('trueNegative'))
             .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == Images.image_type)
             .scalar()
         ) or 0
 
@@ -71,6 +88,7 @@ def get_confusion_matrix():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
 
 
 def get_ml_metrics():
