@@ -10,7 +10,10 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
                 Images.image_id,
                 Images.image_path,
                 Images.image_type,
-                func.count(case((Feedback.resolved == False, 1), else_=0)).label("unresolved_count"),
+                func.count(case(
+                    (func.coalesce(Feedback.resolved, False) == False, 1), 
+                    else_=0
+                )).label("unresolved_count"),
                 func.max(Feedback.date_added).label("last_feedback_time"),
                 Images.upload_time,
                 Images.gender,
@@ -30,14 +33,23 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
 
         if resolved is not None:
             if resolved:
-                query = query.having(func.count(case((Feedback.resolved == False, 1), else_=0)) == 0)
+                query = query.having(func.count(case(
+                    (func.coalesce(Feedback.resolved, False) == False, 1), 
+                    else_=0
+                )) == 0)
             else:
-                query = query.having(func.count(case((Feedback.resolved == False, 1), else_=0)) > 0)
+                query = query.having(func.count(case(
+                    (func.coalesce(Feedback.resolved, False) == False, 1), 
+                    else_=0
+                )) > 0)
 
         # Sorting
         valid_sort_fields = {
             'last_feedback_time': func.max(Feedback.date_added),
-            'unresolved_count': func.count(case((Feedback.resolved == False, 1), else_=0)),
+            'unresolved_count': func.count(case(
+                (func.coalesce(Feedback.resolved, False) == False, 1), 
+                else_=0
+            )),
             'upload_time': Images.upload_time,
             'image_id': Images.image_id,
         }
@@ -73,9 +85,6 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
 
         return feedback_data
 
-    except Exception as e:
-        print(f"Error fetching feedback: {e}")
-        return []
 
 
 def get_feedback_count(image_type=None, resolved=None):
