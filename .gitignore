@@ -170,8 +170,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-#Scripts
-/scripts
+#Scripts that expose api keys
 testscript.py
 
 medgenaifirebase.json
