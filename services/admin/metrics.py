@@ -61,34 +61,39 @@ def get_confusion_matrix():
 
 def get_ml_metrics():
     try:
-        result = (
-            db.session.query(
-                func.sum(case(
-                    (UserGuess.user_guess_type == Images.image_type, UserGuess.user_guess_type == 'real'), 
-                    else_=0)).label('true_positive'),
-                func.sum(case(
-                    (UserGuess.user_guess_type != Images.image_type, UserGuess.user_guess_type == 'real'), 
-                    else_=0)).label('false_positive'),
-                func.sum(case(
-                    (UserGuess.user_guess_type == Images.image_type, UserGuess.user_guess_type == 'ai'), 
-                    else_=0)).label('true_negative'),
-                func.sum(case(
-                    (UserGuess.user_guess_type != Images.image_type, UserGuess.user_guess_type == 'ai'), 
-                    else_=0)).label('false_negative')
-            )
-            .join(Images, UserGuess.image_id == Images.image_id)
-            .first()
-        )
 
-        if not result:
-            return {"error": "No data found"}
+        true_positive = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type == Images.image_type).cast(db.Integer)
+            )).join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == 'real')
+            .scalar()
+        ) or 0
+        false_positive = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type != Images.image_type).cast(db.Integer)
+            )).join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == 'real')
+            .scalar()
+        ) or 0
 
-        true_positive = result.true_positive or 0
-        false_positive = result.false_positive or 0
-        true_negative = result.true_negative or 0
-        false_negative = result.false_negative or 0
 
-        accuracy = (true_positive + true_negative) / (true_positive + false_positive + true_negative + false_negative)
+        true_negative = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type == Images.image_type).cast(db.Integer)
+            )).join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == 'ai')
+            .scalar()
+        ) or 0
+        false_negative = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type != Images.image_type).cast(db.Integer)
+            )).join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == 'ai')
+            .scalar()
+        ) or 0
+
+        accuracy = (true_positive + true_negative) / (true_positive + false_positive + true_negative + false_negative) if (true_positive + false_positive + true_negative + false_negative) != 0 else 0
         precision = true_positive / (true_positive + false_positive) if (true_positive + false_positive) != 0 else 0
         recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) != 0 else 0
         f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
