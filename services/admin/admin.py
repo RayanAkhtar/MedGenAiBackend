@@ -1,5 +1,5 @@
 from __init__ import db
-from models import Users, UserGuess, Images, FeedbackUsers, Feedback, Competitions, Tag, UserTags
+from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags
 from sqlalchemy import func, desc
 from datetime import datetime
 import os
@@ -10,10 +10,10 @@ from decimal import Decimal
 def get_metadata_counts():
     try:
         counts = {
-            'feedback': db.session.query(func.count(FeedbackUsers.guess_id)).scalar(),
+            'feedback': db.session.query(func.count(FeedbackUser.guess_id)).scalar(),
             'image': db.session.query(func.count(Images.image_id)).scalar(),
             'leaderboard': db.session.query(func.count(UserGuess.guess_id)).scalar(),
-            'competition': db.session.query(func.count(Competitions.competition_id)).scalar()
+            'competition': db.session.query(func.count(Competition.competition_id)).scalar()
         }
         return counts
     except Exception as e:
@@ -39,7 +39,7 @@ def get_feedback_instances():
         result = db.session.query(
             func.strftime('%Y-%m', UserGuess.date_of_guess).label("month"),
             func.count().label("feedbackCount")
-        ).join(FeedbackUsers, FeedbackUsers.guess_id == UserGuess.guess_id
+        ).join(FeedbackUser, FeedbackUser.guess_id == UserGuess.guess_id
                ).group_by("month").order_by("month").all()
 
         return [{"month": row.month, "feedbackCount": row.feedbackCount} for row in result]
@@ -93,9 +93,9 @@ def get_feedback_resolution_status():
 
 def get_random_unresolved_feedback(image_id):
     try:
-        result = db.session.query(FeedbackUsers.guess_id, FeedbackUsers.feedback_message
-            ).join(UserGuess, FeedbackUsers.guess_id == UserGuess.guess_id
-            ).join(Feedback, FeedbackUsers.guess_id == Feedback.feedback_id
+        result = db.session.query(FeedbackUser.guess_id, FeedbackUser.feedback_message
+            ).join(UserGuess, FeedbackUser.guess_id == UserGuess.guess_id
+            ).join(Feedback, FeedbackUser.guess_id == Feedback.feedback_id
             ).filter(UserGuess.image_id == image_id, Feedback.resolved.is_(False)
             ).order_by(func.random()).limit(1).all()
 
