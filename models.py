@@ -43,6 +43,12 @@ class Images(db.Model):
 
     upload_time = db.Column(db.DateTime, nullable=False)
 
+    gender = db.Column(db.String(20), nullable=True)
+    race = db.Column(db.String(20), nullable=True)
+    age = db.Column(db.Integer, nullable=True)
+    disease = db.Column(db.String(50), nullable=True)
+
+
 
 class GameImages(db.Model):
     __tablename__ = 'game_images'
@@ -137,6 +143,9 @@ class Feedback(db.Model):
     msg = db.Column(db.String(255), nullable=False)
     resolved = db.Column(db.Boolean, default=False, nullable=False)
     date_added = db.Column(db.DateTime, nullable=False)
+
+    # 0 - Not confident at all     100 - Very Confident
+    confidence = db.Column(db.Integer, nullable=False, default=50)
 
 class Tag(db.Model):
     __tablename__ = 'tag'
