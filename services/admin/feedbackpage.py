@@ -16,7 +16,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
                 Images.image_type,
                 # Use a subquery to count unresolved feedback
                 func.count(case(
-                    (func.coalesce(feedback_alias.resolved, False) == False, 1), 
+                    (func.coalesce(feedback_alias.resolved, True) == False, 1), 
                     else_=None
                 )).label("unresolved_count"),
                 func.max(feedback_alias.date_added).label("last_feedback_time"),
@@ -42,12 +42,12 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
         if resolved is not None:
             if resolved:
                 query = query.having(func.count(case(
-                    (func.coalesce(feedback_alias.resolved, False) == False, 1),
+                    (func.coalesce(feedback_alias.resolved, True) == False, 1),
                     else_=None
                 )) == 0)
             else:
                 query = query.having(func.count(case(
-                    (func.coalesce(feedback_alias.resolved, False) == False, 1),
+                    (func.coalesce(feedback_alias.resolved, True) == False, 1),
                     else_=None
                 )) > 0)
 
@@ -55,7 +55,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
         valid_sort_fields = {
             'last_feedback_time': func.max(feedback_alias.date_added),
             'unresolved_count': func.count(case(
-                (func.coalesce(feedback_alias.resolved, False) == False, 1), 
+                (func.coalesce(feedback_alias.resolved, True) == False, 1), 
                 else_=None
             )),
             'upload_time': Images.upload_time,
