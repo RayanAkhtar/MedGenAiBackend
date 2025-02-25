@@ -76,6 +76,7 @@ def finish_classic_game():
     try:
         data = request.get_json()
         game_id = data.get('gameId')
+        user_id = request.user_id
         user_guesses = data.get('userGuesses', [])
         
         if not game_id or not user_guesses:
@@ -87,6 +88,7 @@ def finish_classic_game():
         # Finish game and get results
         results = game_service.finish_classic_game(
             game_id=game_id,
+            user_id=user_id,
             user_guesses=user_guesses
         )
         

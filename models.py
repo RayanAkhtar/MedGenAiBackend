@@ -40,14 +40,7 @@ class Images(db.Model):
     image_id = db.Column(db.Integer, primary_key=True)
     image_path = db.Column(db.String(255), nullable=False)
     image_type = db.Column(db.String(50), nullable=False)
-
     upload_time = db.Column(db.DateTime, nullable=False)
-
-    gender = db.Column(db.String(20), nullable=True)
-    race = db.Column(db.String(20), nullable=True)
-    age = db.Column(db.Integer, nullable=True)
-    disease = db.Column(db.String(50), nullable=True)
-
 
 
 class GameImages(db.Model):

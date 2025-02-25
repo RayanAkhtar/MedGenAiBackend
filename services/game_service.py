@@ -1,4 +1,4 @@
-from models import Users, Images, UserGuess, Game, GameImages, UserGameSession
+from models import Users, Images, UserGuess, Game, GameImages, UserGameSession, Feedback, FeedbackUser
 from __init__ import db
 from typing import Tuple, List, Dict
 import uuid
@@ -25,14 +25,20 @@ class GameService:
             print(f"Initializing classic game for user {user_id}")
             print(f"Requested image count: {image_count}")
 
-            # Get equal number of real and AI images
-            half_count = max(image_count // 2, 1)
-            print(f"Fetching {half_count} real images and {half_count} AI images")
+            # Calculate how many of each type to fetch
+            real_count = image_count // 2
+            ai_count = image_count // 2
             
-            real_images = get_images_rand(half_count, 'real')
+            # If odd number, add one more real image
+            if image_count % 2 != 0:
+                real_count += 1
+            
+            print(f"Fetching {real_count} real images and {ai_count} AI images")
+            
+            real_images = get_images_rand(real_count, 'real')
             print(f"Got {len(real_images)} real images")
             
-            ai_images = get_images_rand(half_count, 'ai')
+            ai_images = get_images_rand(ai_count, 'ai')
             print(f"Got {len(ai_images)} AI images")
 
             # Create new game in database
@@ -169,108 +175,174 @@ class GameService:
             db.session.rollback()
             raise
 
-    def finish_classic_game(self, game_id: str, user_id: str, user_guesses: List[Dict]) -> Dict:
+    def finish_classic_game(self, game_id, user_id, user_guesses):
         """
-        Finish a classic game session for a user
+        Finish a classic game and update user's score
+        
+        Args:
+            game_id (str): ID of the game
+            user_id (str): ID of the user
+            user_guesses (list): List of user guesses with format:
+                [
+                    {
+                        "url": str,
+                        "guess": str,
+                        "feedback": str (optional),
+                        "x": float (optional),
+                        "y": float (optional)
+                    },
+                    ...
+                ]
+        
+        Returns:
+            dict: Game results including score and stats
         """
         try:
-            session_key = f"{game_id}_{user_id}"
-            session = self.active_sessions.get(session_key)
+            from datetime import datetime
             
-            if not session or session['status'] != 'active':
-                raise ValueError(f"No active session found for user {user_id} in game {game_id}")
-
-            # Get user session from database
-            user_session = UserGameSession.query.filter_by(
-                session_id=session['session_id']
+            print(f"Processing game completion for user {user_id}, game {game_id}")
+            print(f"Received {len(user_guesses)} guesses")
+            
+            # Get the user
+            user = Users.query.filter_by(user_id=user_id).first()
+            if not user:
+                raise ValueError("User not found")
+            
+            # Get the game
+            game = Game.query.filter_by(game_id=game_id).first()
+            if not game:
+                raise ValueError("Game not found")
+            
+            # Create or get user game session
+            session = UserGameSession.query.filter_by(
+                game_id=game_id,
+                user_id=user_id
             ).first()
             
-            if not user_session:
-                raise ValueError(f"Session not found in database")
-            
-            correct_guesses = 0
-            total_guesses = len(user_guesses)
-            
-            # Record each guess
-            for guess in user_guesses:
-                image_url = guess.get('url')
-                user_guess_type = guess.get('guess')
-                
-                # Find corresponding image
-                game_image = next(
-                    (img for img in session['selected_images'] if img['url'] == image_url),
-                    None
+            if not session:
+                # Create new session
+                session = UserGameSession(
+                    game_id=game_id,
+                    user_id=user_id,
+                    start_time=datetime.now(),
+                    session_status="completed"
                 )
+                db.session.add(session)
+                db.session.flush()  # Get the session ID
+            
+            # Process user guesses
+            correct_guesses = 0
+            total_guesses = 0
+            
+            for guess_data in user_guesses:
+                # Extract data from the new format
+                image_url = guess_data.get('url')
+                user_guess_type = guess_data.get('guess')
+                feedback_text = guess_data.get('feedback')
+                x_coord = guess_data.get('x')
+                y_coord = guess_data.get('y')
                 
-                if not game_image:
-                    print(f"Warning: Image {image_url} not found in session")
+                # Skip if missing essential data
+                if not image_url or not user_guess_type:
+                    print(f"Warning: Skipping invalid guess with url={image_url}, guess={user_guess_type}")
                     continue
-                    
+                
+                # Extract image_path from URL
+                # URL format: http://127.0.0.1:5328/api/images/view//path/to/image.jpg
+                image_path = image_url.split('/api/images/view/')[-1]
+                
+                # Clean up the path - remove leading slashes
+                while image_path.startswith('/'):
+                    image_path = image_path[1:]
+                
+                print(f"Looking for image with path: {image_path}")
+                
+                # Try to find the image with exact path
+                image = Images.query.filter_by(image_path=image_path).first()
+                
+                # If not found, try with a leading slash
+                if not image:
+                    image = Images.query.filter_by(image_path=f"/{image_path}").first()
+                
+                # If still not found, try with the filename only
+                if not image:
+                    filename = image_path.split('/')[-1]
+                    image = Images.query.filter(Images.image_path.like(f'%{filename}')).first()
+                
+                if not image:
+                    print(f"Warning: Image with path '{image_path}' not found in database")
+                    continue
+                
                 # Check if guess is correct
-                is_correct = game_image['type'] == user_guess_type
+                is_correct = (user_guess_type == image.image_type)
                 if is_correct:
                     correct_guesses += 1
+                total_guesses += 1
                 
-                try:
-                    # Get image_id from URL
-                    image_path = image_url.split('/api/images/view/')[-1]
-                    image = Images.query.filter_by(image_path=image_path).first()
+                # Save the guess
+                user_guess = UserGuess(
+                    user_id=user_id,
+                    image_id=image.image_id,
+                    user_guess_type=user_guess_type,
+                    is_correct=is_correct,
+                    time_taken=0,  # No time data in current format
+                    session_id=session.session_id,
+                    date_of_guess=datetime.now()
+                )
+                db.session.add(user_guess)
+                db.session.flush()  # Get the guess ID
+                
+                # Process feedback if provided
+                if feedback_text or (x_coord is not None and y_coord is not None):
+                    # Create feedback entry without specifying feedback_id
+                    feedback = Feedback(
+                        x=x_coord if x_coord is not None else 0,
+                        y=y_coord if y_coord is not None else 0,
+                        msg=feedback_text if feedback_text else "",
+                        resolved=False,
+                        date_added=datetime.now(),
+                        confidence=50  # Default confidence value
+                    )
+                    db.session.add(feedback)
+                    db.session.flush()  # This will populate the feedback_id
                     
-                    if image:
-                        user_guess = UserGuess(
-                            session_id=user_session.session_id,
-                            image_id=image.image_id,
-                            user_id=user_id,
-                            user_guess_type=user_guess_type,
-                            date_of_guess=datetime.datetime.now(),
-                            is_correct=is_correct
-                        )
-                        db.session.add(user_guess)
-                        db.session.commit()
-                    
-                except Exception as e:
-                    print(f"Error recording guess: {str(e)}")
-                    db.session.rollback()
+                    # Link feedback to user guess
+                    feedback_user = FeedbackUser(
+                        feedback_id=feedback.feedback_id,
+                        guess_id=user_guess.guess_id
+                    )
+                    db.session.add(feedback_user)
             
-            # Calculate score
-            score = int((correct_guesses / total_guesses) * 100) if total_guesses > 0 else 0
-            completion_time = datetime.datetime.now()
-            time_taken = int((completion_time - user_session.start_time).total_seconds())
+            # Calculate score - 10 points per correct guess
+            score = correct_guesses * 10
             
-            # Update user session
-            user_session.completion_time = completion_time
-            user_session.session_status = 'completed'
-            user_session.final_score = score
-            user_session.correct_guesses = correct_guesses
-            user_session.total_guesses = total_guesses
-            user_session.time_taken = time_taken
+            # Update session
+            session.completion_time = datetime.now()
+            session.final_score = score
+            session.correct_guesses = correct_guesses
+            session.total_guesses = total_guesses
             
             # Update user stats
-            user = Users.query.filter_by(user_id=user_id).first()
-            if user:
-                user.score += score
-                if score >= 70:  # Win condition: 70% or better
-                    user.games_won += 1
+            user.score += score
+            if correct_guesses > 0:
+                user.games_won += 1
             
+            # Commit changes
             db.session.commit()
             
-            # Update memory session
-            session['status'] = 'completed'
-            session['score'] = score
-            session['correct_guesses'] = correct_guesses
-            session['total_guesses'] = total_guesses
+            print(f"Game completed successfully. Score: {score}, Correct: {correct_guesses}, Total: {total_guesses}")
             
+            # Return results
             return {
                 'score': score,
                 'correctGuesses': correct_guesses,
                 'totalGuesses': total_guesses,
-                'timeTaken': time_taken,
                 'status': 'success'
             }
             
         except Exception as e:
-            print(f"Error finishing classic game: {str(e)}")
             db.session.rollback()
+            print(f"Error in finish_classic_game: {str(e)}")
             raise
 
     def get_session(self, game_id: str, user_id: str) -> Dict:
