@@ -43,7 +43,7 @@ def get_image_confusion_matrix(image_id):
         true_positive = (
             db.session.query(func.sum(
                 case(
-                    [(UserGuess.user_guess_type == 'real', 1)], 
+                    (UserGuess.user_guess_type == 'real', 1), 
                     else_=0
                 )
             ).label('truePositive'))
@@ -54,7 +54,7 @@ def get_image_confusion_matrix(image_id):
         false_positive = (
             db.session.query(func.sum(
                 case(
-                    [(UserGuess.user_guess_type == 'ai', 1)], 
+                    (UserGuess.user_guess_type == 'ai', 1), 
                     else_=0
                 )
             ).label('falsePositive'))
@@ -67,7 +67,7 @@ def get_image_confusion_matrix(image_id):
         false_negative = (
             db.session.query(func.sum(
                 case(
-                    [(UserGuess.user_guess_type == 'real', 1)], 
+                    (UserGuess.user_guess_type == 'real', 1), 
                     else_=0
                 )
             ).label('falseNegative'))
@@ -78,7 +78,7 @@ def get_image_confusion_matrix(image_id):
         true_negative = (
             db.session.query(func.sum(
                 case(
-                    [(UserGuess.user_guess_type == 'ai', 1)], 
+                    (UserGuess.user_guess_type == 'ai', 1), 
                     else_=0
                 )
             ).label('trueNegative'))
