@@ -85,6 +85,9 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
 
         return feedback_data
 
+    except Exception as e:
+        print(f"Error fetching feedback: {e}")
+        return []
 
 
 def get_feedback_count(image_type=None, resolved=None):
