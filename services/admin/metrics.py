@@ -1,6 +1,6 @@
 from __init__ import db
 from models import UserGuess, Images, Users
-from sqlalchemy import func, case
+from sqlalchemy import func, case, text
 
 def get_image_detection_accuracy():
     try:
