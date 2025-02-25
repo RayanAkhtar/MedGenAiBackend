@@ -16,7 +16,7 @@ def create_app(test_config=None):
 
 
     # Configure the app
-    uri = os.environ.get('DATABASE_URL', 'postgresql://default_user:default_password@localhost/medgen')
+    uri = os.environ.get('DATABASE_URL', 'postgresql://medgen_user:blackberry@localhost/medgen')
     if uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
 

@@ -48,10 +48,14 @@ class GameImages(db.Model):
     __tablename__ = 'game_images'
 
     id = db.Column(db.Integer, primary_key=True)
-    game_id = db.Column(db.String(128), nullable=False)  # UUID from GameService
+    game_id = db.Column(db.Integer, db.ForeignKey('games.game_id'), nullable=False)
     image_id = db.Column(db.Integer, db.ForeignKey('images.image_id'), nullable=False)
-    
-    image = db.relationship('Images', backref=db.backref('game_images', lazy=True))
+
+    # Define relationships
+    image = db.relationship('Images', 
+                          backref=db.backref('game_images', lazy=True),
+                          foreign_keys=[image_id])
+
 
 class Game(db.Model):
     __tablename__ = 'games'
@@ -60,11 +64,20 @@ class Game(db.Model):
     game_mode = db.Column(db.String(50), nullable=False)
     date_created = db.Column(db.DateTime, nullable=False)
     game_board = db.Column(db.String(50), nullable=False)
-    game_status = db.Column(db.String(50), nullable=False)  # 'active', 'completed', 'expired'
-    expiry_date = db.Column(db.DateTime, nullable=True)  # When the game expires
-    created_by = db.Column(db.String(128), db.ForeignKey('users.user_id'), nullable=False)  # Creator of the game
-    
-    game_images = db.relationship('GameImages', backref=db.backref('games', lazy=True))
+    game_status = db.Column(db.String(50), nullable=False)
+    expiry_date = db.Column(db.DateTime, nullable=True)
+    created_by = db.Column(db.String(128), db.ForeignKey('users.user_id'), nullable=False)
+
+    # Define the relationship properly
+    game_images = db.relationship('GameImages', 
+                                backref=db.backref('game', lazy=True),
+                                foreign_keys='GameImages.game_id')
+    user_sessions = db.relationship('UserGameSession',
+                                  backref=db.backref('game', lazy=True),
+                                  foreign_keys='UserGameSession.game_id')
+    creator = db.relationship('Users',
+                            backref=db.backref('created_games', lazy=True),
+                            foreign_keys=[created_by])
 
 
 class UserGameSession(db.Model):
@@ -82,9 +95,10 @@ class UserGameSession(db.Model):
     total_guesses = db.Column(db.Integer, nullable=True)
     time_taken = db.Column(db.Integer, nullable=True)
 
-    # Relationships
-    game = db.relationship('Game', backref=db.backref('user_sessions', lazy=True))
-    user = db.relationship('Users', backref=db.backref('game_sessions', lazy=True))
+    # Define relationships
+    user = db.relationship('Users',
+                         backref=db.backref('game_sessions', lazy=True),
+                         foreign_keys=[user_id])
 
 
 class UserGuess(db.Model):
