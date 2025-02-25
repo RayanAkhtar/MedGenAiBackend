@@ -1,4 +1,3 @@
-
 from __init__ import db
 from models import *
 from sqlalchemy import text, bindparam, func
