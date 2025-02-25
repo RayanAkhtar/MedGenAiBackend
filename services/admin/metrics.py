@@ -1,21 +1,21 @@
 from __init__ import db
-from models import UserGuesses, Images, Users
+from models import UserGuess, Images, Users
 from sqlalchemy import func, case
 
 def get_image_detection_accuracy():
     try:
         result = (
             db.session.query(
-                func.strftime('%Y-%m', UserGuesses.date_of_guess).label('month'),
+                func.strftime('%Y-%m', UserGuess.date_of_guess).label('month'),
                 func.sum(
                     case(
-                        (UserGuesses.user_guess_type == Images.image_type, 1),
+                        (UserGuess.user_guess_type == Images.image_type, 1),
                         else_=0
                     )
                 ) * 1.0 / func.count()
             )
-            .join(Images, UserGuesses.image_id == Images.image_id)
-            .filter(UserGuesses.date_of_guess >= func.datetime('now', '-12 months'))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.date_of_guess >= func.datetime('now', '-12 months'))
             .group_by('month')
             .order_by('month')
             .all()
@@ -32,12 +32,12 @@ def get_confusion_matrix():
     try:
         result = (
             db.session.query(
-                func.sum(case((UserGuesses.user_guess_type == 'real', UserGuesses.user_guess_type == Images.image_type), else_=0)).label('truePositive'),
-                func.sum(case((UserGuesses.user_guess_type == 'ai', UserGuesses.user_guess_type != Images.image_type), else_=0)).label('falsePositive'),
-                func.sum(case((UserGuesses.user_guess_type == 'real', UserGuesses.user_guess_type != Images.image_type), else_=0)).label('falseNegative'),
-                func.sum(case((UserGuesses.user_guess_type == 'ai', UserGuesses.user_guess_type == Images.image_type), else_=0)).label('trueNegative')
+                func.sum(case((UserGuess.user_guess_type == 'real', UserGuess.user_guess_type == Images.image_type), else_=0)).label('truePositive'),
+                func.sum(case((UserGuess.user_guess_type == 'ai', UserGuess.user_guess_type != Images.image_type), else_=0)).label('falsePositive'),
+                func.sum(case((UserGuess.user_guess_type == 'real', UserGuess.user_guess_type != Images.image_type), else_=0)).label('falseNegative'),
+                func.sum(case((UserGuess.user_guess_type == 'ai', UserGuess.user_guess_type == Images.image_type), else_=0)).label('trueNegative')
             )
-            .join(Images, UserGuesses.image_id == Images.image_id)
+            .join(Images, UserGuess.image_id == Images.image_id)
             .first()
         )
 
@@ -57,12 +57,12 @@ def get_ml_metrics():
     try:
         result = (
             db.session.query(
-                func.sum(case((UserGuesses.user_guess_type == Images.image_type, UserGuesses.user_guess_type == 'real'), else_=0)).label('true_positive'),
-                func.sum(case((UserGuesses.user_guess_type != Images.image_type, UserGuesses.user_guess_type == 'real'), else_=0)).label('false_positive'),
-                func.sum(case((UserGuesses.user_guess_type == Images.image_type, UserGuesses.user_guess_type == 'ai'), else_=0)).label('true_negative'),
-                func.sum(case((UserGuesses.user_guess_type != Images.image_type, UserGuesses.user_guess_type == 'ai'), else_=0)).label('false_negative')
+                func.sum(case((UserGuess.user_guess_type == Images.image_type, UserGuess.user_guess_type == 'real'), else_=0)).label('true_positive'),
+                func.sum(case((UserGuess.user_guess_type != Images.image_type, UserGuess.user_guess_type == 'real'), else_=0)).label('false_positive'),
+                func.sum(case((UserGuess.user_guess_type == Images.image_type, UserGuess.user_guess_type == 'ai'), else_=0)).label('true_negative'),
+                func.sum(case((UserGuess.user_guess_type != Images.image_type, UserGuess.user_guess_type == 'ai'), else_=0)).label('false_negative')
             )
-            .join(Images, UserGuesses.image_id == Images.image_id)
+            .join(Images, UserGuess.image_id == Images.image_id)
             .first()
         )
 
@@ -95,14 +95,14 @@ def get_leaderboard():
     try:
         result = (
             db.session.query(
-                UserGuesses.user_id,
+                UserGuess.user_id,
                 Users.username,
-                func.avg(case((UserGuesses.user_guess_type == Images.image_type, 1), else_=0)).label('accuracy')
+                func.avg(case((UserGuess.user_guess_type == Images.image_type, 1), else_=0)).label('accuracy')
             )
-            .join(Images, UserGuesses.image_id == Images.image_id)
-            .join(Users, Users.user_id == UserGuesses.user_id)
-            .group_by(UserGuesses.user_id, Users.username)
-            .order_by(func.avg(case((UserGuesses.user_guess_type == Images.image_type, 1), else_=0)).desc())
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .join(Users, Users.user_id == UserGuess.user_id)
+            .group_by(UserGuess.user_id, Users.username)
+            .order_by(func.avg(case((UserGuess.user_guess_type == Images.image_type, 1), else_=0)).desc())
             .limit(10)
             .all()
         )
@@ -121,12 +121,12 @@ def get_image_difficulty():
                 Images.image_id,
                 Images.image_path,
                 func.count().label('total_guesses'),
-                func.sum(case((UserGuesses.user_guess_type != Images.image_type, 1), else_=0)).label('incorrect_guesses'),
-                (func.sum(case((UserGuesses.user_guess_type != Images.image_type, 1), else_=0)) * 1.0 / func.count()).label('difficulty_score')
+                func.sum(case((UserGuess.user_guess_type != Images.image_type, 1), else_=0)).label('incorrect_guesses'),
+                (func.sum(case((UserGuess.user_guess_type != Images.image_type, 1), else_=0)) * 1.0 / func.count()).label('difficulty_score')
             )
-            .join(UserGuesses, UserGuesses.image_id == Images.image_id)
+            .join(UserGuess, UserGuess.image_id == Images.image_id)
             .group_by(Images.image_id)
-            .order_by(func.sum(case((UserGuesses.user_guess_type != Images.image_type, 1), else_=0)) * 1.0 / func.count().desc())
+            .order_by(func.sum(case((UserGuess.user_guess_type != Images.image_type, 1), else_=0)) * 1.0 / func.count().desc())
             .all()
         )
 

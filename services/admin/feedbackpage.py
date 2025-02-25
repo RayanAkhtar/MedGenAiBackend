@@ -1,5 +1,5 @@
 from __init__ import db
-from models import Images, Feedback, FeedbackUsers, UserGuesses
+from models import Images, Feedback, FeedbackUser, UserGuess
 from sqlalchemy import func, case, desc, asc
 
 
@@ -19,9 +19,9 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
                 Images.age,
                 Images.disease,
             )
-            .outerjoin(UserGuesses, UserGuesses.image_id == Images.image_id)
-            .outerjoin(FeedbackUsers, FeedbackUsers.guess_id == UserGuesses.guess_id)
-            .outerjoin(Feedback, Feedback.feedback_id == FeedbackUsers.feedback_id)
+            .outerjoin(UserGuess, UserGuess.image_id == Images.image_id)
+            .outerjoin(FeedbackUser, FeedbackUser.guess_id == UserGuess.guess_id)
+            .outerjoin(Feedback, Feedback.feedback_id == FeedbackUser.feedback_id)
             .group_by(Images.image_id, Images.image_path, Images.image_type, Images.upload_time)
         )
 
@@ -84,9 +84,9 @@ def get_feedback_count(image_type=None, resolved=None):
         # Base query
         query = (
             db.session.query(func.count(func.distinct(Images.image_id)))
-            .outerjoin(UserGuesses, UserGuesses.image_id == Images.image_id)
-            .outerjoin(FeedbackUsers, FeedbackUsers.guess_id == UserGuesses.guess_id)
-            .outerjoin(Feedback, Feedback.feedback_id == FeedbackUsers.feedback_id)
+            .outerjoin(UserGuess, UserGuess.image_id == Images.image_id)
+            .outerjoin(FeedbackUser, FeedbackUser.guess_id == UserGuess.guess_id)
+            .outerjoin(Feedback, Feedback.feedback_id == FeedbackUser.feedback_id)
         )
 
         # Apply filters
@@ -110,8 +110,8 @@ def resolve_all_feedback_by_image(image_id: int):
     try:
         # Get all guesses associated with the image
         guess_ids = (
-            db.session.query(UserGuesses.guess_id)
-            .filter(UserGuesses.image_id == image_id)
+            db.session.query(UserGuess.guess_id)
+            .filter(UserGuess.image_id == image_id)
             .all()
         )
 
@@ -123,8 +123,8 @@ def resolve_all_feedback_by_image(image_id: int):
         # Update feedback as resolved
         db.session.query(Feedback).filter(
             Feedback.feedback_id.in_(
-                db.session.query(FeedbackUsers.feedback_id)
-                .filter(FeedbackUsers.guess_id.in_(guess_ids))
+                db.session.query(FeedbackUser.feedback_id)
+                .filter(FeedbackUser.guess_id.in_(guess_ids))
                 .subquery()
             )
         ).update({Feedback.resolved: True}, synchronize_session=False)
