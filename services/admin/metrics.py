@@ -43,7 +43,7 @@ def get_confusion_matrix():
         false_positive = (
             db.session.query(func.sum(
                 case(
-                    [(UserGuess.user_guess_type == 'ai', 1)], 
+                    (UserGuess.user_guess_type == 'ai', 1), 
                     else_=0
                 )
             ).label('falsePositive'))
@@ -56,7 +56,7 @@ def get_confusion_matrix():
         false_negative = (
             db.session.query(func.sum(
                 case(
-                    [(UserGuess.user_guess_type == 'real', 1)], 
+                    (UserGuess.user_guess_type == 'real', 1), 
                     else_=0
                 )
             ).label('falseNegative'))
