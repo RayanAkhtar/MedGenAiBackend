@@ -6,16 +6,16 @@ def get_image_detection_accuracy():
     try:
         result = (
             db.session.query(
-                func.strftime('%Y-%m', UserGuess.date_of_guess).label('month'),
-                func.sum(
+                func.to_char(UserGuess.date_of_guess, 'YYYY-MM').label('month'),
+                (func.sum(
                     case(
                         (UserGuess.user_guess_type == Images.image_type, 1),
                         else_=0
                     )
-                ) * 1.0 / func.count()
+                ) * 1.0) / func.count().label('accuracy')
             )
             .join(Images, UserGuess.image_id == Images.image_id)
-            .filter(UserGuess.date_of_guess >= func.datetime('now', '-12 months'))
+            .filter(UserGuess.date_of_guess >= func.now() - text("INTERVAL '12 months'"))
             .group_by('month')
             .order_by('month')
             .all()
