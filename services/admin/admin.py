@@ -53,9 +53,9 @@ def get_total_real_images():
             func.count(Images.image_id).label("totalReal"),
             func.coalesce(
                 func.sum(
-                    func.case(
-                        [(UserGuess.user_guess_type == 'real', 1)], 
-                        value=0
+                    case(
+                        (UserGuess.user_guess_type == 'real', 1), 
+                        else_=0
                     )
                 ) * 1.0 / func.count(UserGuess.guess_id),
                 0
@@ -76,9 +76,9 @@ def get_total_ai_images():
             func.count(Images.image_id).label("totalAI"),
             func.coalesce(
                 func.sum(
-                    func.case(
-                        [(UserGuess.user_guess_type == 'ai', 1)], 
-                        value=0
+                    case(
+                        (UserGuess.user_guess_type == 'ai', 1), 
+                        else_=0
                     )
                 ) * 1.0 / func.count(UserGuess.guess_id),
                 0
@@ -97,8 +97,8 @@ def get_total_ai_images():
 def get_feedback_resolution_status():
     try:
         result = db.session.query(
-            func.sum(func.case((Feedback.resolved == True, 1), else_=0)).label("resolvedCount"),
-            func.sum(func.case((Feedback.resolved == False, 1), else_=0)).label("unresolvedCount")
+            func.sum(case((Feedback.resolved == True, 1), else_=0)).label("resolvedCount"),
+            func.sum(case((Feedback.resolved == False, 1), else_=0)).label("unresolvedCount")
         ).first()
 
         return {"resolvedCount": result.resolvedCount, "unresolvedCount": result.unresolvedCount} if result else {}
