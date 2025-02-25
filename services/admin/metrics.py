@@ -29,35 +29,49 @@ def get_image_detection_accuracy():
 
 def get_confusion_matrix():
     try:
-        result = (
-            db.session.query(
-                func.sum(case(
-                    (UserGuess.user_guess_type == 'real', UserGuess.user_guess_type == Images.image_type), 
-                    else_=0)).label('truePositive'),
-                func.sum(case(
-                    (UserGuess.user_guess_type == 'ai', UserGuess.user_guess_type != Images.image_type), 
-                    else_=0)).label('falsePositive'),
-                func.sum(case(
-                    (UserGuess.user_guess_type == 'real', UserGuess.user_guess_type != Images.image_type), 
-                    else_=0)).label('falseNegative'),
-                func.sum(case(
-                    (UserGuess.user_guess_type == 'ai', UserGuess.user_guess_type == Images.image_type), 
-                    else_=0)).label('trueNegative')
-            )
+
+        true_positive = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type == 'real') & (UserGuess.user_guess_type == Images.image_type)
+            ).cast(db.Integer))
             .join(Images, UserGuess.image_id == Images.image_id)
-            .first()
-        )
+            .scalar()
+        ) or 0
+        false_positive = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type == 'ai') & (UserGuess.user_guess_type != Images.image_type)
+            ).cast(db.Integer))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .scalar()
+        ) or 0
+
+
+        false_negative = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type == 'real') & (UserGuess.user_guess_type != Images.image_type)
+            ).cast(db.Integer))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .scalar()
+        ) or 0
+        true_negative = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type == 'ai') & (UserGuess.user_guess_type == Images.image_type)
+            ).cast(db.Integer))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .scalar()
+        ) or 0
 
         return {
-            "truePositive": result.truePositive,
-            "falsePositive": result.falsePositive,
-            "falseNegative": result.falseNegative,
-            "trueNegative": result.trueNegative
+            "truePositive": true_positive,
+            "falsePositive": false_positive,
+            "falseNegative": false_negative,
+            "trueNegative": true_negative
         }
 
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
 
 def get_ml_metrics():
     try:
