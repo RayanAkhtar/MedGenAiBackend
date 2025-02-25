@@ -53,9 +53,9 @@ def get_total_real_images():
             func.count(Images.image_id).label("totalReal"),
             func.coalesce(
                 func.sum(
-                    case(
-                        [(UserGuess.user_guess_type == 'real', 1)],
-                        else_=0
+                    func.case(
+                        [(UserGuess.user_guess_type == 'real', 1)], 
+                        value=0
                     )
                 ) * 1.0 / func.count(UserGuess.guess_id),
                 0
@@ -69,15 +69,16 @@ def get_total_real_images():
         return {"error": str(e)}
 
 
+
 def get_total_ai_images():
     try:
         result = db.session.query(
             func.count(Images.image_id).label("totalAI"),
             func.coalesce(
                 func.sum(
-                    case(
-                        [(UserGuess.user_guess_type == 'ai', 1)],
-                        else_=0
+                    func.case(
+                        [(UserGuess.user_guess_type == 'ai', 1)], 
+                        value=0
                     )
                 ) * 1.0 / func.count(UserGuess.guess_id),
                 0
@@ -89,6 +90,7 @@ def get_total_ai_images():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
 
 
 
