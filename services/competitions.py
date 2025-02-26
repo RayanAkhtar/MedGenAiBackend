@@ -57,7 +57,7 @@ def get_competition(game_id):
             db.session.query(Users.username, CompetitionUser.score)
             .join(CompetitionUser, Users.user_id == CompetitionUser.user_id)
             .filter(CompetitionUser.competition_id == game_id)
-            .order_by(desc(CompetitionUser.score))
+            .order_by(CompetitionUser.score.desc())
             .first()
         )
 
