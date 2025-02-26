@@ -57,7 +57,7 @@ def get_total_real_images():
                         (UserGuess.user_guess_type == 'real', 1), 
                         else_=0
                     )
-                ) * 1.0 / func.count(UserGuess.guess_id),
+                ) * 1.0 / func.nullif(func.count(UserGuess.guess_id), 0),
                 0
             ).label("percentageDetected")
         ).outerjoin(UserGuess, UserGuess.image_id == Images.image_id
