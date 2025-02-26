@@ -52,6 +52,6 @@ def generate_image(age: str = "", gender: str = "", disease: str = ""):
 
     if image:
         image_path = image.image_path
-        return send_from_directory(os.path.join(BASE_DIR, 'Generated'), image_path)
+        return send_from_directory(BASE_DIR, image_path)
 
     return None
