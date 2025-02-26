@@ -19,13 +19,13 @@ def map_age_range(age_range):
     
     return age_mapping.get(age_range, None)
 
-def generate_image(age: str = "", sex: str = "", disease: str = ""):
+def generate_image(age: str = "", gender: str = "", disease: str = ""):
     """
     Retrieves a random image from the database based on filters.
     
     Parameters:
     - age (str): The selected age range.
-    - sex (str): The selected sex.
+    - gender (str): The selected gender.
     - disease (str): The selected disease.
     
     Returns:
@@ -34,7 +34,7 @@ def generate_image(age: str = "", sex: str = "", disease: str = ""):
     query = Images.query
 
     age = age if age else "any"
-    sex = sex if sex else "any"
+    gender = gender if gender else "any"
     disease = disease if disease else "any"
 
 
@@ -42,8 +42,8 @@ def generate_image(age: str = "", sex: str = "", disease: str = ""):
         age_range = map_age_range(age)
         if age_range:
             query = query.filter(Images.age.between(*age_range))
-    if sex != "any":
-        query = query.filter(Images.sex == sex)
+    if gender != "any":
+        query = query.filter(Images.gender == gender)
     if disease != "any":
         query = query.filter(Images.disease == disease)
 
