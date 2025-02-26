@@ -3,7 +3,7 @@ from flask import request, send_from_directory
 from models import Images
 from sqlalchemy.sql.expression import func
 
-BASE_DIR = "../../MedGenAI-Images/Images"
+BASE_IMAGES_PATH = os.path.abspath(os.path.join(os.getcwd(), "../MedGenAI-Images/Images"))
 
 def map_age_range(age_range):
     """
