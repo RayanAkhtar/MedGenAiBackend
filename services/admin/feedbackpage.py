@@ -22,7 +22,6 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
                 func.max(feedback_alias.date_added).label("last_feedback_time"),
                 Images.upload_time,
                 Images.gender,
-                Images.race,
                 Images.age,
                 Images.disease,
             )
@@ -31,7 +30,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
             .outerjoin(feedback_alias, feedback_alias.feedback_id == FeedbackUser.feedback_id)
             .group_by(
                 Images.image_id, Images.image_path, Images.image_type, 
-                Images.upload_time, Images.gender, Images.race, Images.age, Images.disease
+                Images.upload_time, Images.gender, Images.age, Images.disease
             )
         )
 
@@ -84,7 +83,6 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
                 'last_feedback_time': row.last_feedback_time.strftime('%Y-%m-%d') if row.last_feedback_time else None,
                 'upload_time': row.upload_time.strftime('%Y-%m-%d') if row.upload_time else None,
                 'gender': row.gender,
-                'race': row.race,
                 'age': row.age,
                 'disease': row.disease,
             }
