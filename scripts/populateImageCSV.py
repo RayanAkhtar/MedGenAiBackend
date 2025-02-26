@@ -46,6 +46,7 @@ def process_csv():
                     image_records.append((row["id"], processed_path, "ai", datetime.now(), gender, None, row["age"], disease))
         
         batch_insert(image_records)
+        return # Todo delete later
     except Exception as e:
         print(f"Error processing CSV: {e}")
 
@@ -55,18 +56,23 @@ def batch_insert(records):
     for i in range(0, total_records, BATCH_SIZE):
         batch = records[i:i + BATCH_SIZE]
         values = ", ".join(
-            f"({img_id}, '{path}', '{img_type}', '{upload_time}', {repr(gender)}, {repr(race)}, {repr(age)}, {repr(disease)})"
+            f"('{path}', '{img_type}', '{upload_time}', "
+            f"{'NULL' if gender is None else repr(gender)}, "
+            f"{'NULL' if age is None else repr(age)}, "
+            f"{'NULL' if disease is None else repr(disease)})"
             for img_id, path, img_type, upload_time, gender, race, age, disease in batch
         )
         query = f"""
-        INSERT INTO images (image_id, image_path, image_type, upload_time, gender, race, age, disease)
+        INSERT INTO images (image_path, image_type, upload_time, gender, age, disease)
         VALUES {values};
         """
+        print("Query is: ", query)
         response = execute_sql_query(query)
         if response.status_code == 200:
             print(f"Successfully inserted {len(batch)} records.")
         else:
             print(f"Failed to insert batch, Error: {response.text}")
+
 
 if __name__ == "__main__":
     process_csv()
