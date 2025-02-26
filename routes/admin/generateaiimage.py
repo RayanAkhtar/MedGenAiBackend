@@ -1,4 +1,4 @@
-from flask import jsonify, request, Blueprint
+from flask import Blueprint, request, jsonify
 from services.admin.generateaiimage import generate_image
 
 bp = Blueprint("adminGenerate", __name__)
@@ -14,3 +14,7 @@ def generate_image_route():
         return jsonify({"imagePath": image_url})
     else:
         return jsonify({"error": "No matching images found"}), 404
+
+@bp.route(".admin/helloworld", methods=["GET"])
+def hello_world_route():
+    return jsonify({"Message": "Hello world"})
