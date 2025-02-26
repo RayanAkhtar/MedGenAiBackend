@@ -44,6 +44,7 @@ def create_app(test_config=None):
         from routes.admin.feedbackpage import bp as admin_feedback_bp
         from routes.admin.metrics import bp as admin_metrics_bp
         from routes.admin.heatmapfeedback import bp as admin_heatmap_bp
+        from routes.admin.generateaiimage import bp as generate_heatmap_bp
 
         from routes.game import  game_bp
         from middleware.auth import auth_bp
@@ -57,6 +58,7 @@ def create_app(test_config=None):
         app.register_blueprint(admin_feedback_bp)
         app.register_blueprint(admin_metrics_bp)
         app.register_blueprint(admin_heatmap_bp)
+        app.register_blueprint(generate_heatmap_bp)
 
         app.register_blueprint(image_bp)
         app.register_blueprint(game_bp, url_prefix='/game')
