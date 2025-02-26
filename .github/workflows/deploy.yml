@@ -1,0 +1,48 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+      - admin
+      # Add more branches as needed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set Environment Variables Based on Branch
+        run: |
+          if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
+            echo "BRANCH_NAME=main" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=backend-main" >> $GITHUB_ENV
+            echo "PORT=5328" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF#refs/heads/}" == "dev" ]]; then
+            echo "BRANCH_NAME=dev" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=backend-dev" >> $GITHUB_ENV
+            echo "PORT=5329" >> $GITHUB_ENV
+          # Add more elif statements as needed
+          else
+            echo "Branch not configured for deployment"
+            exit 1
+          fi
+
+      - name: SSH into EC2 and Deploy
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/MedGenAiBackend
+            git fetch origin $BRANCH_NAME
+            git checkout $BRANCH_NAME
+            git pull origin $BRANCH_NAME
+            docker stop $CONTAINER_NAME || true
+            docker rm $CONTAINER_NAME || true
+            docker build -t $CONTAINER_NAME .
+            docker run -d --name $CONTAINER_NAME -p $PORT:5328 --env-file=.env -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json $CONTAINER_NAME
