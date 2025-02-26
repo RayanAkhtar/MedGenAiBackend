@@ -77,7 +77,6 @@ def create_tables():
             image_type VARCHAR(50) NOT NULL,
             upload_time TIMESTAMP NOT NULL,
             gender VARCHAR(20),
-            race VARCHAR(20),
             age INT,
             disease VARCHAR(50)
         );

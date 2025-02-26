@@ -43,11 +43,11 @@ VALUES
 
         # Images
         """
-        INSERT INTO images (image_id, image_path, image_type, upload_time, gender, race, age, disease)
+        INSERT INTO images (image_id, image_path, image_type, upload_time, gender, age, disease)
         VALUES 
-            (111111, '/test_images/fake_1.jpg', 'ai', '2023-03-17', 'male', 'asian', 55, 'none'),
-            (111112, '/test_images/fake_2.jpg', 'real', '2023-03-17', 'female', 'white', 23, 'none'),
-            (111113, '/test_images/fake_3.jpg', 'ai', '2023-03-17', 'male', 'black', 34, 'pleural effusion');
+            (111111, '/test_images/fake_1.jpg', 'ai', '2023-03-17', 'male', 55, 'none'),
+            (111112, '/test_images/fake_2.jpg', 'real', '2023-03-17', 'none', 23, 'none'),
+            (111113, '/test_images/fake_3.jpg', 'ai', '2023-03-17', 'none', 34, 'pleural effusion');
         """,
 
         # User Guesses
@@ -150,7 +150,7 @@ def cleanup():
         "DELETE FROM feedback_users;",
         "DELETE FROM feedback;",
         "DELETE FROM user_guesses;",
-        # "DELETE FROM images;",
+        "DELETE FROM images;",
         "DELETE FROM users;",
         "DELETE FROM competitions;"
     ]

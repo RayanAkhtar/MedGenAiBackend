@@ -1,185 +1,154 @@
-# services/admin.py
-
 from __init__ import db
-from models import *
-from sqlalchemy import text
-from datetime import datetime 
-
-
+from models import Images, Feedback, FeedbackUser, UserGuess
+from sqlalchemy import func, case, desc, asc, text
+from sqlalchemy.orm import aliased
 
 def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort_order='asc', limit=20, offset=0):
     try:
-        # Start the query string
-        query_str = """
-            SELECT 
-                images.image_id,
-                images.image_path,
-                images.image_type,
-                COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) AS unresolved_count,
-                MAX(feedback.date_added) AS last_feedback_time,
-                images.upload_time,
-                images.gender,
-                images.race,
-                images.age, 
-                images.disease
-            FROM images
-            LEFT JOIN user_guesses ON user_guesses.image_id = images.image_id
-            LEFT JOIN feedback_users ON feedback_users.guess_id = user_guesses.guess_id
-            LEFT JOIN feedback ON feedback.feedback_id = feedback_users.feedback_id
+        # Alias for Feedback table to avoid duplication due to joins
+        feedback_alias = aliased(Feedback)
 
-            WHERE 1=1
-        """
+        # Base query
+        query = (
+            db.session.query(
+                Images.image_id,
+                Images.image_path,
+                Images.image_type,
+                # Use a subquery to count unresolved feedback
+                func.count(case(
+                    (func.coalesce(feedback_alias.resolved, True) == False, 1), 
+                    else_=None
+                )).label("unresolved_count"),
+                func.max(feedback_alias.date_added).label("last_feedback_time"),
+                Images.upload_time,
+                Images.gender,
+                Images.age,
+                Images.disease,
+            )
+            .outerjoin(UserGuess, UserGuess.image_id == Images.image_id)
+            .outerjoin(FeedbackUser, FeedbackUser.guess_id == UserGuess.guess_id)
+            .outerjoin(feedback_alias, feedback_alias.feedback_id == FeedbackUser.feedback_id)
+            .group_by(
+                Images.image_id, Images.image_path, Images.image_type, 
+                Images.upload_time, Images.gender, Images.age, Images.disease
+            )
+        )
 
-        # Apply filters for image_type if provided
+        # Apply filters
         if image_type and image_type != "all":
-            query_str += " AND images.image_type = :image_type"
+            query = query.filter(Images.image_type == image_type)
 
-        query_str += """
-            GROUP BY images.image_id, images.image_path, images.image_type, images.upload_time
-        """
-
-        # Apply HAVING clause if resolved is False
-        if resolved is False:
-            query_str += """
-                HAVING COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) > 0
-            """
-        if resolved:
-            query_str += """
-                HAVING COUNT(CASE WHEN feedback.resolved IS false THEN 1 END) = 0
-"""
-
-        # Apply sorting based on sort_by field
-        valid_sort_fields = ['last_feedback_time', 'unresolved_count', 'upload_time']
-        if sort_by:
-            if sort_by in valid_sort_fields:
-                query_str += f" ORDER BY {sort_by} {sort_order.upper()}"
-            elif sort_by == "image_id":
-                query_str += f" ORDER BY images.image_id {sort_order.upper()}"
+        if resolved is not None:
+            if resolved:
+                query = query.having(func.count(case(
+                    (func.coalesce(feedback_alias.resolved, True) == False, 1),
+                    else_=None
+                )) == 0)
             else:
-                raise ValueError("Invalid sort field provided.")
-        else:
-            query_str += f" ORDER BY last_feedback_time {sort_order.upper()}"
+                query = query.having(func.count(case(
+                    (func.coalesce(feedback_alias.resolved, True) == False, 1),
+                    else_=None
+                )) > 0)
 
-        # Add LIMIT and OFFSET for pagination
-        query_str += f" LIMIT :limit OFFSET :offset"
-
-        # Prepare parameters for query execution
-        params = {
-            'limit': limit,
-            'offset': offset
+        # Sorting
+        valid_sort_fields = {
+            'last_feedback_time': func.max(feedback_alias.date_added),
+            'unresolved_count': func.count(case(
+                (func.coalesce(feedback_alias.resolved, True) == False, 1), 
+                else_=None
+            )),
+            'upload_time': Images.upload_time,
+            'image_id': Images.image_id,
         }
 
-        # If image_type filter is provided, add to params
-        if image_type:
-            params['image_type'] = image_type
-        if resolved is not None:
-            params['resolved'] = resolved
+        if sort_by and sort_by in valid_sort_fields:
+            order_func = asc if sort_order.lower() == 'asc' else desc
+            query = query.order_by(order_func(valid_sort_fields[sort_by]))
+        else:
+            query = query.order_by(desc(func.max(feedback_alias.date_added)))
 
-        # Execute the query
-        query = text(query_str)
-        result = db.session.execute(query, params)
+        # Apply limit and offset for pagination
+        query = query.limit(limit).offset(offset)
 
-        # Process and format the results
-        feedback_data = []
-        for row in result.mappings():
-            feedback_data.append({
-                'image_id': row['image_id'],
-                'image_path': row['image_path'],
-                'image_type': row['image_type'],
-                'unresolved_count': row['unresolved_count'],
-                'last_feedback_time': (
-                    row['last_feedback_time'].strftime('%Y-%m-%d')
-                    if isinstance(row['last_feedback_time'], datetime) else row['last_feedback_time']
-                ),
-                'upload_time': (
-                    row['upload_time'].strftime('%Y-%m-%d')
-                    if isinstance(row['upload_time'], datetime) else row['upload_time']
-                ),
-                'gender': row['gender'],
-                'race': row['race'],
-                'age': row['age'],
-                'disease': row['disease'],
-            })
+        # Execute query
+        results = query.all()
+
+        # Format results
+        feedback_data = [
+            {
+                'image_id': row.image_id,
+                'image_path': row.image_path,
+                'image_type': row.image_type,
+                'unresolved_count': row.unresolved_count or 0,
+                'last_feedback_time': row.last_feedback_time.strftime('%Y-%m-%d') if row.last_feedback_time else None,
+                'upload_time': row.upload_time.strftime('%Y-%m-%d') if row.upload_time else None,
+                'gender': row.gender,
+                'age': row.age,
+                'disease': row.disease,
+            }
+            for row in results
+        ]
 
         return feedback_data
 
     except Exception as e:
         print(f"Error fetching feedback: {e}")
         return []
-    
 
 
 def get_feedback_count(image_type=None, resolved=None):
     try:
-        count_query_str = """
-            SELECT COUNT(DISTINCT images.image_id) 
-            FROM images
-            LEFT JOIN user_guesses ON user_guesses.image_id = images.image_id
-            LEFT JOIN feedback_users ON feedback_users.guess_id = user_guesses.guess_id
-            LEFT JOIN feedback ON feedback.feedback_id = feedback_users.feedback_id
-            WHERE 1=1
-        """
+        # Base query
+        query = (
+            db.session.query(func.count(func.distinct(Images.image_id)))
+            .outerjoin(UserGuess, UserGuess.image_id == Images.image_id)
+            .outerjoin(FeedbackUser, FeedbackUser.guess_id == UserGuess.guess_id)
+            .outerjoin(Feedback, Feedback.feedback_id == FeedbackUser.feedback_id)
+        )
 
+        # Apply filters
         if image_type and image_type != "all":
-            count_query_str += " AND images.image_type = :image_type"
+            query = query.filter(Images.image_type == image_type)
 
         if resolved is not None:
-            count_query_str += f" AND feedback.resolved IS {'true' if resolved else 'false'}"
+            query = query.filter(Feedback.resolved == resolved)
 
-        count_query = text(count_query_str)
-        params = {
-            'image_type': image_type,
-            'resolved': resolved
-        }
-        count_result = db.session.execute(count_query, params)
+        # Execute query
+        total_count = query.scalar()
 
-        total_count = count_result.scalar()
-
-        return total_count
+        return total_count or 0
 
     except Exception as e:
         print(f"Error fetching feedback count: {e}")
         return 0
 
 
-
 def resolve_all_feedback_by_image(image_id: int):
     try:
-        query = text("""
-            SELECT ug.guess_id
-            FROM user_guesses ug
-            JOIN images img ON ug.image_id = img.image_id
-            WHERE img.image_id = :image_id
-        """)
-        result = db.session.execute(query, {'image_id': image_id})
-        db.session.commit()
+        # Get all guesses associated with the image
+        guess_ids = (
+            db.session.query(UserGuess.guess_id)
+            .filter(UserGuess.image_id == image_id)
+            .all()
+        )
 
-        guess_ids = [row[0] for row in result]
+        guess_ids = [g[0] for g in guess_ids]
 
         if not guess_ids:
             return {"error": "No guesses found for the given image_id"}
 
-        update_query = text("""
-            UPDATE feedback
-            SET resolved = TRUE
-            WHERE feedback_id IN (
-                SELECT fu.feedback_id
-                FROM feedback_users fu
-                JOIN feedback f ON fu.feedback_id = f.feedback_id
-                WHERE fu.guess_id IN :guess_ids
+        # Update feedback as resolved
+        db.session.query(Feedback).filter(
+            Feedback.feedback_id.in_(
+                db.session.query(FeedbackUser.feedback_id)
+                .filter(FeedbackUser.guess_id.in_(guess_ids))
+                .subquery()
             )
-        """)
-        db.session.execute(update_query, {'guess_ids': tuple(guess_ids)})
-        db.session.commit()
+        ).update({Feedback.resolved: True}, synchronize_session=False)
 
+        db.session.commit()
         return {"message": "All feedback for the image has been marked as resolved"}
 
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
-
-
-
-
-
-

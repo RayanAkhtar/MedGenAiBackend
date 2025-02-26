@@ -1,53 +1,90 @@
 from __init__ import db
-from models import *
-from sqlalchemy import text
-
-
+from models import UserGuess, Images, Users
+from sqlalchemy import func, case, text
 
 def get_image_detection_accuracy():
     try:
-        query = text("""
-SELECT 
-    TO_CHAR(date_of_guess, 'YYYY-MM') AS month,
-    SUM(CASE WHEN user_guess_type = (SELECT image_type FROM images WHERE images.image_id = user_guesses.image_id) THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS accuracy
-FROM user_guesses
-WHERE date_of_guess >= NOW() - INTERVAL '12 months'
-GROUP BY month
-ORDER BY month;
-        """)
-        result = db.session.execute(query)
-        db.session.commit()
+        result = (
+            db.session.query(
+                func.to_char(UserGuess.date_of_guess, 'YYYY-MM').label('month'),
+                (func.sum(
+                    case(
+                        (UserGuess.user_guess_type == Images.image_type, 1),
+                        else_=0
+                    )
+                ) * 1.0) / func.count().label('accuracy')
+            )
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.date_of_guess >= func.now() - text("INTERVAL '12 months'"))
+            .group_by('month')
+            .order_by('month')
+            .all()
+        )
 
-        rows = []
-        for row in result:
-            row_dict = {column: value for column, value in zip(result.keys(), row)}
-            rows.append(row_dict)
-
-        return rows
+        return [{'month': row[0], 'accuracy': row[1]} for row in result]
+    
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
 
-
 def get_confusion_matrix():
     try:
-        query = text("""
-            SELECT
-                SUM(CASE WHEN user_guess_type = 'real' AND image_type = 'real' THEN 1 ELSE 0 END) AS truePositive,
-                SUM(CASE WHEN user_guess_type = 'ai' AND image_type = 'real' THEN 1 ELSE 0 END) AS falsePositive,
-                SUM(CASE WHEN user_guess_type = 'real' AND image_type = 'ai' THEN 1 ELSE 0 END) AS falseNegative,
-                SUM(CASE WHEN user_guess_type = 'ai' AND image_type = 'ai' THEN 1 ELSE 0 END) AS trueNegative
-            FROM user_guesses
-            JOIN images ON user_guesses.image_id = images.image_id;
-        """)
-        result = db.session.execute(query)
-        db.session.commit()
+        true_positive = (
+            db.session.query(func.sum(
+                case(
+                    (UserGuess.user_guess_type == 'real', 1), 
+                    else_=0
+                )
+            ).label('truePositive'))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == Images.image_type)
+            .scalar()
+        ) or 0
+        false_positive = (
+            db.session.query(func.sum(
+                case(
+                    (UserGuess.user_guess_type == 'ai', 1), 
+                    else_=0
+                )
+            ).label('falsePositive'))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type != Images.image_type)
+            .scalar()
+        ) or 0
 
-        confusion_matrix = {}
-        for row in result:
-            confusion_matrix = {column: value for column, value in zip(result.keys(), row)}
 
-        return confusion_matrix
+        false_negative = (
+            db.session.query(func.sum(
+                case(
+                    (UserGuess.user_guess_type == 'real', 1), 
+                    else_=0
+                )
+            ).label('falseNegative'))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type != Images.image_type)
+            .scalar()
+        ) or 0
+
+
+        true_negative = (
+            db.session.query(func.sum(
+                case(
+                    (UserGuess.user_guess_type == 'ai', 1), 
+                    else_=0
+                )
+            ).label('trueNegative'))
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == Images.image_type)
+            .scalar()
+        ) or 0
+
+        return {
+            "truePositive": true_positive,
+            "falsePositive": false_positive,
+            "falseNegative": false_negative,
+            "trueNegative": true_negative
+        }
+
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
@@ -56,33 +93,39 @@ def get_confusion_matrix():
 
 def get_ml_metrics():
     try:
-        # Use text() to ensure that SQLAlchemy knows it's a raw SQL query
-        query = text("""
-            SELECT 
-                SUM(CASE WHEN user_guesses.user_guess_type = images.image_type AND user_guesses.user_guess_type = 'real' THEN 1 ELSE 0 END) AS true_positive,
-                SUM(CASE WHEN user_guesses.user_guess_type != images.image_type AND user_guesses.user_guess_type = 'real' THEN 1 ELSE 0 END) AS false_positive,
-                SUM(CASE WHEN user_guesses.user_guess_type = images.image_type AND user_guesses.user_guess_type = 'ai' THEN 1 ELSE 0 END) AS true_negative,
-                SUM(CASE WHEN user_guesses.user_guess_type != images.image_type AND user_guesses.user_guess_type = 'ai' THEN 1 ELSE 0 END) AS false_negative
-            FROM user_guesses
-            JOIN images ON user_guesses.image_id = images.image_id
-        """)
 
-        # Execute the query and commit the transaction
-        result = db.session.execute(query)
-        db.session.commit()
+        true_positive = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type == Images.image_type).cast(db.Integer)
+            )).join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == 'real')
+            .scalar()
+        ) or 0
+        false_positive = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type != Images.image_type).cast(db.Integer)
+            )).join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == 'real')
+            .scalar()
+        ) or 0
 
-        # Get the results as a dictionary
-        row = result.fetchone()
-        if not row:
-            return {"error": "No data found"}
 
-        true_positive = row[0]
-        false_positive = row[1]
-        true_negative = row[2]
-        false_negative = row[3]
+        true_negative = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type == Images.image_type).cast(db.Integer)
+            )).join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == 'ai')
+            .scalar()
+        ) or 0
+        false_negative = (
+            db.session.query(func.sum(
+                (UserGuess.user_guess_type != Images.image_type).cast(db.Integer)
+            )).join(Images, UserGuess.image_id == Images.image_id)
+            .filter(UserGuess.user_guess_type == 'ai')
+            .scalar()
+        ) or 0
 
-        # Calculate the metrics
-        accuracy = (true_positive + true_negative) / (true_positive + false_positive + true_negative + false_negative)
+        accuracy = (true_positive + true_negative) / (true_positive + false_positive + true_negative + false_negative) if (true_positive + false_positive + true_negative + false_negative) != 0 else 0
         precision = true_positive / (true_positive + false_positive) if (true_positive + false_positive) != 0 else 0
         recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) != 0 else 0
         f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
@@ -98,61 +141,56 @@ def get_ml_metrics():
         db.session.rollback()
         return {"error": str(e)}
 
-
 def get_leaderboard():
     try:
-        query = text("""
-SELECT 
-    user_guesses.user_id, 
-    username,
-    AVG(CASE WHEN user_guess_type = image_type THEN 1 ELSE 0 END) AS accuracy
-FROM user_guesses
-JOIN images ON user_guesses.image_id = images.image_id
-JOIN users ON users.user_id = user_guesses.user_id
-GROUP BY user_guesses.user_id, users.username
-ORDER BY accuracy DESC
-LIMIT 10;
-        """)
-        result = db.session.execute(query)
-        db.session.commit()
+        result = (
+            db.session.query(
+                UserGuess.user_id,
+                Users.username,
+                func.avg(case(
+                    (UserGuess.user_guess_type == Images.image_type, 1), 
+                    else_=0)).label('accuracy')
+            )
+            .join(Images, UserGuess.image_id == Images.image_id)
+            .join(Users, Users.user_id == UserGuess.user_id)
+            .group_by(UserGuess.user_id, Users.username)
+            .order_by(func.avg(case(
+                    (UserGuess.user_guess_type == Images.image_type, 1), 
+                    else_=0)).desc())
+            .limit(10)
+            .all()
+        )
 
-        leaderboard = []
-        for row in result:
-            leaderboard.append({column: value for column, value in zip(result.keys(), row)})
+        return [{'user_id': row[0], 'username': row[1], 'accuracy': row[2]} for row in result]
 
-        return leaderboard
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
-
 
 def get_image_difficulty():
     try:
-        query = text("""
-            SELECT 
-                images.image_id, 
-                images.image_path,
-                COUNT(*) AS total_guesses,
-                SUM(CASE WHEN user_guess_type != images.image_type THEN 1 ELSE 0 END) AS incorrect_guesses,
-                (SUM(CASE WHEN user_guess_type != images.image_type THEN 1 ELSE 0 END) * 1.0 / COUNT(*)) AS difficulty_score
-            FROM user_guesses
-            JOIN images ON user_guesses.image_id = images.image_id
-            GROUP BY images.image_id
-            ORDER BY difficulty_score DESC;
-        """)
-        result = db.session.execute(query)
-        db.session.commit()
+        result = (
+            db.session.query(
+                Images.image_id,
+                Images.image_path,
+                func.count().label('total_guesses'),
+                func.sum(case(
+                    (UserGuess.user_guess_type != Images.image_type, 1), 
+                    else_=0)).label('incorrect_guesses'),
+                (func.sum(case(
+                    (UserGuess.user_guess_type != Images.image_type, 1), 
+                    else_=0)) * 1.0 / func.count()).label('difficulty_score')
+            )
+            .join(UserGuess, UserGuess.image_id == Images.image_id)
+            .group_by(Images.image_id)
+            .order_by((func.sum(case(
+                    (UserGuess.user_guess_type != Images.image_type, 1), 
+                    else_=0)) * 1.0 / func.count()).desc())
+            .all()
+        )
 
-        difficulty_data = []
-        for row in result:
-            difficulty_data.append({column: value for column, value in zip(result.keys(), row)})
+        return [{'image_id': row[0], 'image_path': row[1], 'total_guesses': row[2], 'incorrect_guesses': row[3], 'difficulty_score': row[4]} for row in result]
 
-        return difficulty_data
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
-
-
-
-
-

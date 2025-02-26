@@ -1,9 +1,7 @@
-# services/admin.py
-
 from __init__ import db
-from models import *
-from sqlalchemy import text, bindparam, func
-from datetime import datetime 
+from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags
+from sqlalchemy import func, desc, text, case
+from datetime import datetime
 import os
 from flask import jsonify, flash
 from werkzeug.utils import secure_filename
@@ -11,188 +9,150 @@ from decimal import Decimal
 
 def get_metadata_counts():
     try:
-        queries = {
-            'feedback': "SELECT COUNT(*) FROM feedback_users",
-            'image': "SELECT COUNT(*) FROM images",
-            'leaderboard': "SELECT COUNT(*) FROM user_guesses",
-            'competition': "SELECT COUNT(*) FROM competitions" 
+        counts = {
+            'feedback': db.session.query(func.count(FeedbackUser.guess_id)).scalar(),
+            'image': db.session.query(func.count(Images.image_id)).scalar(),
+            'leaderboard': db.session.query(func.count(UserGuess.guess_id)).scalar(),
+            'competition': db.session.query(func.count(Competition.competition_id)).scalar()
         }
-
-        counts = {}
-
-
-        for table, query in queries.items():
-            result = db.session.execute(text(query))
-            db.session.commit()
-            count = result.fetchone()[0]
-            counts[table] = count
-
         return counts
-
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
 
 def get_guesses_per_month():
     try:
-        query = text("""
-SELECT 
-    TO_CHAR(date_of_guess, 'YYYY-MM') AS month,
-    COUNT(*) AS guess_count
-FROM user_guesses
-WHERE date_of_guess >= NOW() - INTERVAL '12 months'
-GROUP BY month
-ORDER BY month;
-        """)
-        result = db.session.execute(query)
-        db.session.commit()
+        result = db.session.query(
+            func.to_char(UserGuess.date_of_guess, 'YYYY-MM').label("month"),
+            func.count().label("guess_count")
+        ).filter(
+            UserGuess.date_of_guess >= func.now() - text("INTERVAL '12 months'")
+        ).group_by("month").order_by("month").all()
 
-        rows = []
-        for row in result:
-            row_dict = {column: value for column, value in zip(result.keys(), row)}
-            rows.append(row_dict)
-
-        return rows
+        return [{"month": row.month, "guess_count": row.guess_count} for row in result]
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
 
-
 def get_feedback_instances():
     try:
-        query = text("""
-            SELECT 
-                strftime('%Y-%m', (SELECT date_of_guess FROM user_guesses WHERE user_guesses.guess_id = feedback_users.guess_id)) AS month,
-                COUNT(*) AS feedbackCount
-            FROM feedback_users
-            GROUP BY month
-            ORDER BY month;
-        """)
-        result = db.session.execute(query)
-        db.session.commit()
+        result = db.session.query(
+            func.to_char(UserGuess.date_of_guess, 'YYYY-MM').label("month"),
+            func.count().label("feedbackCount")
+        ).join(FeedbackUser, FeedbackUser.guess_id == UserGuess.guess_id
+               ).group_by("month").order_by("month").all()
 
-        rows = []
-        for row in result:
-            row_dict = {column: value for column, value in zip(result.keys(), row)}
-            rows.append(row_dict)
-
-        return rows
+        return [{"month": row.month, "feedbackCount": row.feedbackCount} for row in result]
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
 
 def get_total_real_images():
     try:
-        query = text("""
-            SELECT 
-                COUNT(img.image_id) AS totalReal,
-                COALESCE(
-                    SUM(CASE WHEN ug.user_guess_type = 'real' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
-                    0
-                ) AS percentageDetected
-            FROM images img
-            LEFT JOIN user_guesses ug ON ug.image_id = img.image_id
-            LEFT JOIN feedback_users fu ON fu.guess_id = ug.guess_id
-            WHERE img.image_type = 'real';
-        """)
-        result = db.session.execute(query)
-        db.session.commit()
+        result = db.session.query(
+            func.count(Images.image_id).label("totalReal"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (UserGuess.user_guess_type == 'real', 1), 
+                        else_=0
+                    )
+                ) * 1.0 / func.nullif(func.count(UserGuess.guess_id), 0),
+                0
+            ).label("percentageDetected")
+        ).outerjoin(UserGuess, UserGuess.image_id == Images.image_id
+                    ).filter(Images.image_type == 'real').first()
 
-        row = result.fetchone()
-        if row:
-            return {
-                "totalReal": int(row[0]),
-                "percentageDetected": float(row[1]) if isinstance(row[1], Decimal) else 0.0  # Convert Decimal to float
-            }
-        return {}
+        return {"totalReal": result.totalReal, "percentageDetected": float(result.percentageDetected)} if result else {}
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
+
 
 def get_total_ai_images():
     try:
-        query = text("""
-            SELECT 
-                COUNT(img.image_id) AS totalAI,
-                COALESCE(
-                    SUM(CASE WHEN ug.user_guess_type = 'ai' THEN 1 ELSE 0 END) * 1.0 / COUNT(ug.guess_id), 
-                    0
-                ) AS percentageDetected
-            FROM images img
-            LEFT JOIN user_guesses ug ON ug.image_id = img.image_id
-            LEFT JOIN feedback_users fu ON fu.guess_id = ug.guess_id
-            WHERE img.image_type = 'ai';
-        """)
-        result = db.session.execute(query)
-        db.session.commit()
+        result = db.session.query(
+            func.count(Images.image_id).label("totalAI"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (UserGuess.user_guess_type == 'ai', 1), 
+                        else_=0
+                    )
+                ) * 1.0 / func.count(UserGuess.guess_id),
+                0
+            ).label("percentageDetected")
+        ).outerjoin(UserGuess, UserGuess.image_id == Images.image_id
+                    ).filter(Images.image_type == 'ai').first()
 
-        row = result.fetchone()
-        if row:
-            return {
-                "totalAI": int(row[0]),  
-                "percentageDetected": float(row[1]) if isinstance(row[1], Decimal) else 0.0
-            }
-        return {}
+        return {"totalAI": result.totalAI, "percentageDetected": float(result.percentageDetected)} if result else {}
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+
+
+
 
 def get_feedback_resolution_status():
     try:
-        query = text("""
-            SELECT 
-                SUM(CASE WHEN resolved IS TRUE THEN 1 ELSE 0 END) AS resolvedCount,
-                SUM(CASE WHEN resolved IS FALSE THEN 1 ELSE 0 END) AS unresolvedCount
-            FROM feedback;
-        """)
-        result = db.session.execute(query)
-        db.session.commit()
+        result = db.session.query(
+            func.sum(case((Feedback.resolved == True, 1), else_=0)).label("resolvedCount"),
+            func.sum(case((Feedback.resolved == False, 1), else_=0)).label("unresolvedCount")
+        ).first()
 
-        rows = []
-        for row in result:
-            row_dict = {column: value for column, value in zip(result.keys(), row)}
-            rows.append(row_dict)
-
-        return rows
+        return {"resolvedCount": result.resolvedCount, "unresolvedCount": result.unresolvedCount} if result else {}
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
-
-
 
 def get_random_unresolved_feedback(image_id):
     try:
-        query = text(f"""
-            SELECT feedback_users.guess_id, feedback_users.feedback_message
-            FROM feedback_users
-            JOIN user_guesses ON feedback_users.guess_id = user_guesses.guess_id
-            JOIN feedback ON feedback_users.guess_id = feedback.feedback_id
-            WHERE user_guesses.image_id = '{image_id}'
-            AND feedback.resolved IS FALSE
-            ORDER BY RANDOM()
-            LIMIT 1;
-        """)
-        result = db.session.execute(query)
-        db.session.commit()
+        result = db.session.query(FeedbackUser.guess_id, FeedbackUser.feedback_message
+            ).join(UserGuess, FeedbackUser.guess_id == UserGuess.guess_id
+            ).join(Feedback, FeedbackUser.guess_id == Feedback.feedback_id
+            ).filter(UserGuess.image_id == image_id, Feedback.resolved.is_(False)
+            ).order_by(func.random()).limit(1).all()
 
-        rows = []
-        for row in result:
-            row_dict = {column: value for column, value in zip(result.keys(), row)}
-            rows.append(row_dict)
-
-        return rows
+        return [{"guess_id": row.guess_id, "feedback_message": row.feedback_message} for row in result]
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
 
+def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True):
+    try:
+        tag_names = [t.lower() for t in tag_names]
+        
+        # Base query
+        query = db.session.query(
+            Users,
+            func.count(func.distinct(UserGuess.guess_id)).label("total_guesses"),
+            func.count(func.distinct(UserGuess.guess_id)).filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
+        ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)
+            ).outerjoin(UserGuess, UserGuess.user_id == Users.user_id
+            ).outerjoin(Images, Images.image_id == UserGuess.image_id
+            ).group_by(Users.user_id)
 
+        # Apply filter for tags
+        if match_all:
+            query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
+        else:
+            query = query.distinct()
 
-    
+        # Fetch results
+        data = [{
+            "username": user.username,
+            "level": user.level,
+            "games_started": user.games_started,
+            "score": user.score,
+            "accuracy": round((correct_guesses / total_guesses * 100) if total_guesses else 0, 2),
+            "engagement": total_guesses
+        } for user, total_guesses, correct_guesses in query.all()]
 
-
-
-
-
+        # Sorting
+        return sorted(data, key=lambda x: x[sort_by], reverse=desc)
+    except Exception as e:
+        return {"error": str(e)}
 
 
 UPLOAD_FOLDER = '../MedGenAI-Images/Images/'
@@ -266,41 +226,3 @@ def upload_image_service(request, image_type):
 
     flash('Invalid file format')
     return jsonify({'error': 'Invalid file format'}), 400
-
-
-
-
-def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True):
-    """
-    Filters users based on tags, either matching ANY tag or ALL tags.
-
-    :param tag_names: List of tag names to filter users by.
-    :param match_all: If True, returns users with ALL tags. 
-                      If False, returns users with ANY tag.
-    :return: List of user objects.
-    """
-    tag_names = [t.lower() for t in tag_names]
-    query = db.session.query(
-    		Users,
-    		func.count(func.distinct(UserGuess.guess_id)).label("total_guesses"),
-    		func.count(func.distinct(UserGuess.guess_id)).filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
-    ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)) \
-     .join(UserGuess, UserGuess.user_id == Users.user_id, isouter = True) \
-     .join(Images, Images.image_id == UserGuess.image_id, isouter = True) \
-     .group_by(Users.user_id)
-
-    if match_all:
-        query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
-    else:
-        query = query.distinct()
-
-    data = [{
-    	"username": user.username, 
-    	"level": user.level, 
-    	"games_started": user.games_started, 
-    	"score": user.score, 
-    	"accuracy": round((correct_guesses / total_guesses * 100) if total_guesses else 0, 2), 
-    	"engagement": total_guesses
-    	} for user, total_guesses, correct_guesses in query.all()]
-    	
-    return sorted(data, key = lambda x: x[sort_by], reverse = desc)
