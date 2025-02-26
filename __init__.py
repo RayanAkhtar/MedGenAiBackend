@@ -16,7 +16,7 @@ def create_app(test_config=None):
 
 
     # Configure the app
-    uri = os.environ.get('DATABASE_URL', 'postgresql://default_user:default_password@localhost/medgen')
+    uri = os.environ.get('DATABASE_URL', 'postgresql://medgen_user:blackberry@localhost/medgen')
     if uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
 
@@ -48,7 +48,7 @@ def create_app(test_config=None):
         from routes.game import  game_bp
         from middleware.auth import auth_bp
         from routes.auth import auth_signup_bp
-
+        from routes.user_dashboard import user_dashboard
         app.register_blueprint(bp)
         app.register_blueprint(profile_bp)
 
@@ -62,6 +62,7 @@ def create_app(test_config=None):
         app.register_blueprint(game_bp, url_prefix='/game')
         app.register_blueprint(auth_bp)
         app.register_blueprint(auth_signup_bp)
+        app.register_blueprint(user_dashboard, url_prefix='/user_dashboard')
 
     print(app.url_map)
     return app 
