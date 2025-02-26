@@ -9,8 +9,8 @@ def generate_image_route():
     gender = request.args.get("sex", "any")
     disease = request.args.get("disease", "any")
 
-    image_url = generate_image(age, gender, disease)
-    if image_url:
-        return jsonify({"imagePath": image_url})
+    image = generate_image(age, gender, disease)
+    if image:
+        return image
     else:
         return jsonify({"error": "No matching images found"}), 404
