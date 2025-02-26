@@ -32,7 +32,7 @@ def process_csv():
         image_records = []
         
         for _, row in df.iterrows():
-            real_image_path = f"real_images/{row['id']}"
+            real_image_path = f"real_images/{row['id']}.jpg"
             image_records.append((row["id"], real_image_path, "real", datetime.now(), None, None, None, None))
             
             for col in COLUMNS_TO_PROCESS:
