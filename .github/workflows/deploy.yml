@@ -31,6 +31,17 @@ jobs:
             exit 1
           fi
 
+      - name: Debug SSH Key
+        run: |
+          echo "Checking if SSH key exists..."
+          if [[ -z "${{ secrets.EC2_SSH_KEY }}" ]]; then
+            echo "ERROR: EC2_SSH_KEY is empty or not set!"
+            exit 1
+          else
+            echo "SSH Key exists with length:"
+            echo "${{ secrets.EC2_SSH_KEY }}" | wc -l
+          fi
+
       - name: SSH into EC2 and Deploy
         uses: appleboy/ssh-action@v0.1.7
         with:
