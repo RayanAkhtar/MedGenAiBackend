@@ -11,6 +11,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    # 🔸 Tell GitHub Actions to use the "production" environment
+    #    so it can access environment-specific secrets.
+    environment:
+      name: production  # This must match the environment name in your repo settings
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -25,7 +30,6 @@ jobs:
             echo "BRANCH_NAME=dev" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-dev" >> $GITHUB_ENV
             echo "PORT=5329" >> $GITHUB_ENV
-          # Add more elif statements as needed
           else
             echo "Branch not configured for deployment"
             exit 1
@@ -34,12 +38,12 @@ jobs:
       - name: Debug SSH Host
         run: |
           echo "Checking if SSH host exists..."
-          if [[ -z "$EC2_HOST" ]]; then
+          if [[ -z "${{ secrets.EC2_HOST }}" ]]; then
             echo "ERROR: EC2_HOST is empty or not set!"
             exit 1
           else
             echo "SSH Host exists with length:"
-            echo "$[#EC2_HOST]" | wc -l
+            echo "${{ secrets.EC2_HOST }}" | wc -l
           fi
 
       - name: Debug SSH Key
@@ -56,6 +60,7 @@ jobs:
       - name: SSH into EC2 and Deploy
         uses: appleboy/ssh-action@v0.1.7
         with:
+          # 🔸 These references now pull from environment-level secrets
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
@@ -67,4 +72,8 @@ jobs:
             docker stop $CONTAINER_NAME || true
             docker rm $CONTAINER_NAME || true
             docker build -t $CONTAINER_NAME .
-            docker run -d --name $CONTAINER_NAME -p $PORT:5328 --env-file=.env -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json $CONTAINER_NAME
+            docker run -d --name $CONTAINER_NAME \
+              -p $PORT:5328 \
+              --env-file=.env \
+              -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json \
+              $CONTAINER_NAME
