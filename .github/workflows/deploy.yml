@@ -14,7 +14,7 @@ jobs:
     # 🔸 Tell GitHub Actions to use the "production" environment
     #    so it can access environment-specific secrets.
     environment:
-      name: production  # This must match the environment name in your repo settings
+      name: med-gen-ai-backend  # This must match the environment name in your repo settings
 
     steps:
       - name: Checkout Code
