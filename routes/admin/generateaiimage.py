@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from services.admin.generateaiimage import generate_image
 from werkzeug.utils import secure_filename
 
@@ -40,3 +40,12 @@ def save_image_route():
         return jsonify({"message": "Image saved successfully", "filePath": file_path}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+BASE_IMAGES_PATH = os.path.abspath(os.path.join(os.getcwd(), "../MedGenAI-Images/Images"))
+
+@bp.route('/admin/<path:filename>')
+def serve_image(filename):
+    image_full_path = os.path.join(BASE_IMAGES_PATH, filename)
+    if os.path.exists(image_full_path):
+        return send_file(image_full_path, mimetype='image/jpeg')
+    return jsonify({"error": "Image not found"}), 404

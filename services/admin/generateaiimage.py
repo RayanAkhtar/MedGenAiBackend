@@ -31,18 +31,11 @@ def generate_image(age: str = "", gender: str = "", disease: str = ""):
 
     if image:
         image_path = image.image_path
-        image_url = url_for('serve_image', filename=image_path, _external=True)  # Generate an absolute URL
+        image_url = url_for('serve_image', filename=image_path, _external=True)
 
         return jsonify({
-            "imagePath": image_url  # Send the full image URL instead of the hex data
+            "imagePath": image_url
         })
 
     return jsonify({"error": "No matching image found"}), 404
 
-
-@bp.route('/admin/<path:filename>')
-def serve_image(filename):
-    image_full_path = os.path.join(BASE_IMAGES_PATH, filename)
-    if os.path.exists(image_full_path):
-        return send_file(image_full_path, mimetype='image/jpeg')
-    return jsonify({"error": "Image not found"}), 404
