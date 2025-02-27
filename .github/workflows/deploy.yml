@@ -11,15 +11,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # 🔸 Tell GitHub Actions to use the "production" environment
-    #    so it can access environment-specific secrets.
     environment:
-      name: med-gen-ai-backend  # This must match the environment name in your repo settings
+      name: med-gen-ai-backend
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      # Add more elif statements for each branch as needed
       - name: Set Environment Variables Based on Branch
         run: |
           if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
@@ -37,21 +36,17 @@ jobs:
 
       - name: Debug SSH Host
         run: |
-          echo "EC2_HOST length: $EC2_HOST"
-          echo "Checking if SSH host exists..."
-          if [[ -z "$EC2_HOST" ]]; then
+          echo "EC2_HOST is: '${{ secrets.EC2_HOST }}'"
+          if [[ -z "${{ secrets.EC2_HOST }}" ]]; then
             echo "ERROR: EC2_HOST is empty or not set!"
             exit 1
           else
-            echo "SSH Host exists with length: ${#EC2_HOST}"
+            echo "SSH Host exists with length:"
+            echo "${{ secrets.EC2_HOST }}" | wc -l
           fi
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-
 
       - name: Debug SSH Key
         run: |
-          echo "Checking if SSH key exists..."
           if [[ -z "${{ secrets.EC2_SSH_KEY }}" ]]; then
             echo "ERROR: EC2_SSH_KEY is empty or not set!"
             exit 1
@@ -63,8 +58,8 @@ jobs:
       - name: SSH into EC2 and Deploy
         uses: appleboy/ssh-action@v0.1.7
         with:
-          # 🔸 These references now pull from environment-level secrets
           host: ${{ secrets.EC2_HOST }}
+          port: 22
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
@@ -75,8 +70,5 @@ jobs:
             docker stop $CONTAINER_NAME || true
             docker rm $CONTAINER_NAME || true
             docker build -t $CONTAINER_NAME .
-            docker run -d --name $CONTAINER_NAME \
-              -p $PORT:5328 \
-              --env-file=.env \
-              -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json \
-              $CONTAINER_NAME
+            docker run -d --name $CONTAINER_NAME -p $PORT:$PORT --env-file=.env \
+              -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json $CONTAINER_NAME
