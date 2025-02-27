@@ -24,11 +24,11 @@ jobs:
           if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
             echo "BRANCH_NAME=main" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-main" >> $GITHUB_ENV
-            echo "PORT=5328" >> $GITHUB_ENV
+            echo "APP_PORT=5328" >> $GITHUB_ENV
           elif [[ "${GITHUB_REF#refs/heads/}" == "dev" ]]; then
             echo "BRANCH_NAME=dev" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-dev" >> $GITHUB_ENV
-            echo "PORT=5329" >> $GITHUB_ENV
+            echo "APP_PORT=5329" >> $GITHUB_ENV
           else
             echo "Branch not configured for deployment"
             exit 1
@@ -70,5 +70,5 @@ jobs:
             docker stop $CONTAINER_NAME || true
             docker rm $CONTAINER_NAME || true
             docker build -t $CONTAINER_NAME .
-            docker run -d --name $CONTAINER_NAME -p $PORT:$PORT --env-file=.env \
+            docker run -d --name $CONTAINER_NAME -p $APP_PORT:$APP_PORT --env-file=.env \
               -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json $CONTAINER_NAME
