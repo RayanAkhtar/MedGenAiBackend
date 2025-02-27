@@ -31,11 +31,12 @@ def generate_image(age: str = "", gender: str = "", disease: str = ""):
 
     if image:
         image_path = image.image_path
-        image_url = url_for('serve_image', filename=image_path, _external=True)
+        image_url = url_for('adminGenerate.serve_image', filename=image_path, _external=True)
 
         return jsonify({
             "imagePath": image_url
         })
 
     return jsonify({"error": "No matching image found"}), 404
+
 
