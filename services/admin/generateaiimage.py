@@ -1,5 +1,5 @@
 import os
-from flask import request, send_from_directory
+from flask import request, send_from_directory, jsonify, Response
 from models import Images
 from sqlalchemy.sql.expression import func
 
@@ -21,7 +21,7 @@ def map_age_range(age_range):
 
 def generate_image(age: str = "", gender: str = "", disease: str = ""):
     """
-    Retrieves a random image from the database based on filters.
+    Retrieves a random image from the database based on filters and also returns the image path.
     
     Parameters:
     - age (str): The selected age range.
@@ -29,7 +29,7 @@ def generate_image(age: str = "", gender: str = "", disease: str = ""):
     - disease (str): The selected disease.
     
     Returns:
-    - Response: The actual image (as a binary blob) to be displayed.
+    - Response: The actual image (as a binary blob) and the image path in JSON format.
     """
     query = Images.query
 
@@ -52,7 +52,10 @@ def generate_image(age: str = "", gender: str = "", disease: str = ""):
 
     if image:
         image_path = image.image_path
-        return {"image": send_from_directory(BASE_IMAGES_PATH, image_path),
-                "path": image_path}
+        image_response = send_from_directory(BASE_IMAGES_PATH, image_path, as_attachment=False)
+        return jsonify({
+            "imagePath": image_path,
+            "image": image_response.get_data()
+        })
 
-    return None
+    return jsonify({"error": "No matching image found"}), 404
