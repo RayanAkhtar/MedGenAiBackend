@@ -1,64 +1,48 @@
 import os
-from flask import request, jsonify, send_file
+from flask import request, jsonify, send_file, url_for
 from models import Images
 from sqlalchemy.sql.expression import func
 
 BASE_IMAGES_PATH = os.path.abspath(os.path.join(os.getcwd(), "../MedGenAI-Images/Images"))
 
 def map_age_range(age_range):
-    """
-    Maps the provided age range string to a database query filter.
-    """
     age_mapping = {
         "18-25": (18, 25),
         "26-35": (26, 35),
         "36-45": (36, 45),
         "46-60": (46, 60),
-        "60+": (60, 120)  # Assuming max age is 120
+        "60+": (60, 120)
     }
-    
     return age_mapping.get(age_range, None)
 
 def generate_image(age: str = "", gender: str = "", disease: str = ""):
-    """
-    Retrieves a random image from the database based on filters and also returns the image path.
-    
-    Parameters:
-    - age (str): The selected age range.
-    - gender (str): The selected gender.
-    - disease (str): The selected disease.
-    
-    Returns:
-    - Response: The actual image (as a binary blob) and the image path in JSON format.
-    """
     query = Images.query
 
-    age = age if age else "any"
-    gender = gender if gender else "any"
-    disease = disease if disease else "any"
-
-
-    if age != "any":
+    if age and age != "any":
         age_range = map_age_range(age)
         if age_range:
             query = query.filter(Images.age.between(*age_range))
-    if gender != "any":
+    if gender and gender != "any":
         query = query.filter(Images.gender == gender)
-    if disease != "any":
+    if disease and disease != "any":
         query = query.filter(Images.disease == disease)
 
-    # Get a random image that matches the filters
     image = query.order_by(func.random()).first()
 
     if image:
         image_path = image.image_path
-        image_full_path = os.path.join(BASE_IMAGES_PATH, image_path)
-        with open(image_full_path, 'rb') as img_file:
-            image_data = img_file.read()
+        image_url = url_for('serve_image', filename=image_path, _external=True)  # Generate an absolute URL
 
         return jsonify({
-            "imagePath": image_path,
-            "image": image_data.hex()
+            "imagePath": image_url  # Send the full image URL instead of the hex data
         })
 
     return jsonify({"error": "No matching image found"}), 404
+
+
+@bp.route('/admin/<path:filename>')
+def serve_image(filename):
+    image_full_path = os.path.join(BASE_IMAGES_PATH, filename)
+    if os.path.exists(image_full_path):
+        return send_file(image_full_path, mimetype='image/jpeg')
+    return jsonify({"error": "Image not found"}), 404
