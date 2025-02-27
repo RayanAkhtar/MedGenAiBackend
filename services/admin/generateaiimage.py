@@ -1,5 +1,5 @@
 import os
-from flask import request, send_from_directory, jsonify, Response
+from flask import request, jsonify, send_file
 from models import Images
 from sqlalchemy.sql.expression import func
 
@@ -52,10 +52,13 @@ def generate_image(age: str = "", gender: str = "", disease: str = ""):
 
     if image:
         image_path = image.image_path
-        image_response = send_from_directory(BASE_IMAGES_PATH, image_path, as_attachment=False)
+        image_full_path = os.path.join(BASE_IMAGES_PATH, image_path)
+        with open(image_full_path, 'rb') as img_file:
+            image_data = img_file.read()
+
         return jsonify({
             "imagePath": image_path,
-            "image": image_response.get_data()
+            "image": image_data.hex()
         })
 
     return jsonify({"error": "No matching image found"}), 404
