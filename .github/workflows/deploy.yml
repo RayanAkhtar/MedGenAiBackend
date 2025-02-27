@@ -64,11 +64,14 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/MedGenAiBackend
-            git fetch origin $BRANCH_NAME
-            git checkout $BRANCH_NAME
-            git pull origin $BRANCH_NAME
-            docker stop $CONTAINER_NAME || true
-            docker rm $CONTAINER_NAME || true
-            docker build -t $CONTAINER_NAME .
-            docker run -d --name $CONTAINER_NAME -p $APP_PORT:$APP_PORT --env-file=.env \
-              -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json $CONTAINER_NAME
+            git fetch origin ${{ env.BRANCH_NAME }}
+            git checkout ${{ env.BRANCH_NAME }}
+            git pull origin ${{ env.BRANCH_NAME }}
+            docker stop ${{ env.CONTAINER_NAME }} || true
+            docker rm ${{ env.CONTAINER_NAME }} || true
+            docker build -t ${{ env.CONTAINER_NAME }} .
+            docker run -d --name ${{ env.CONTAINER_NAME }} \
+              -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
+              --env-file=.env \
+              -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json \
+              ${{ env.CONTAINER_NAME }}
