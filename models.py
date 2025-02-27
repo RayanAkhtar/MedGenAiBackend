@@ -109,7 +109,7 @@ class UserGuess(db.Model):
     user_id = db.Column(db.String(128), db.ForeignKey('users.user_id'), nullable=False)
     user_guess_type = db.Column(db.String(50), nullable=False)
     date_of_guess = db.Column(db.DateTime, nullable=False)
-    is_correct = db.Column(db.Boolean, nullable=False)
+
     time_taken = db.Column(db.Float, nullable=True)
 
     # Relationships
