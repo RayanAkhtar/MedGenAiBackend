@@ -34,12 +34,12 @@ jobs:
       - name: Debug SSH Host
         run: |
           echo "Checking if SSH host exists..."
-          if [[ -z "${{ secrets.EC2_HOST }}" ]]; then
+          if [[ -z "$EC2_HOST" ]]; then
             echo "ERROR: EC2_HOST is empty or not set!"
             exit 1
           else
             echo "SSH Host exists with length:"
-            echo "${{ secrets.EC2_HOST }}" | wc -l
+            echo "$[#EC2_HOST]" | wc -l
           fi
 
       - name: Debug SSH Key
