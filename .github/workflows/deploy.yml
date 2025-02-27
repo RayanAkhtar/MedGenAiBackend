@@ -37,7 +37,7 @@ jobs:
 
       - name: Debug SSH Host
         run: |
-          echo "EC2_HOST length: ${#EC2_HOST}"
+          echo "EC2_HOST length: $EC2_HOST"
           echo "Checking if SSH host exists..."
           if [[ -z "$EC2_HOST" ]]; then
             echo "ERROR: EC2_HOST is empty or not set!"
