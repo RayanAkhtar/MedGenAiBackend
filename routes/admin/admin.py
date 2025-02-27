@@ -13,7 +13,7 @@ from services.admin.admin import (
     filter_users_by_tags,
     get_metadata_counts
 )
-from services.admin_user import get_user_data_by_username, get_users_with_filters
+from services.admin_user import get_game_by_game_id, get_user_data_by_username, get_users_with_filters
 
 
 bp = Blueprint('admin', __name__)
@@ -116,3 +116,7 @@ def get_users_data():
 def get_user_by_id(username):
     user_data = get_user_data_by_username(username)
     return jsonify(user_data)
+
+@bp.route('/admin/getGame/<int:game_id>', methods=['GET'])
+def get_game_by_id(game_id):
+    return jsonify(get_game_by_game_id(game_id))
