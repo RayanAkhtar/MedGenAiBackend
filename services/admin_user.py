@@ -150,3 +150,24 @@ def get_game_by_game_id(game_id):
         return game_data, 200
     except Exception as e:
         return {"error": str(e)}, 404
+    
+
+def create_user_game_session(game_id, user_id):
+    """Creates a new UserGameSession and commits it to the database."""
+    from sqlalchemy.exc import SQLAlchemyError
+    try:
+        new_session = UserGameSession(
+            game_id=game_id,
+            user_id=user_id,
+            start_time=datetime.utcnow(),
+            session_status="active"  # Default status
+        )
+
+        db.session.add(new_session)
+        db.session.commit()
+        return new_session  # Return the created session object
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print(f"Error creating user game session: {e}")
+        return None  # Return None if an error occurs
