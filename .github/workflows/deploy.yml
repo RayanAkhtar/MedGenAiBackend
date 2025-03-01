@@ -33,6 +33,10 @@ jobs:
             echo "BRANCH_NAME=admin" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-admin" >> $GITHUB_ENV
             echo "APP_PORT=5329" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF#refs/heads/}" == "admin-user-games" ]]; then
+            echo "BRANCH_NAME=admin-user-games" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=backend-admin-user-games" >> $GITHUB_ENV
+            echo "APP_PORT=5340" >> $GITHUB_ENV
           else
             echo "Branch not configured for deployment"
             exit 1
