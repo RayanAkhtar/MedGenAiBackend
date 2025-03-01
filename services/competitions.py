@@ -35,7 +35,7 @@ def get_all_competitions():
         competitions = Competition.query.all()
         result = [
             {
-                'id': comp.id,
+                'id': comp.competition_id,
                 'name': comp.competition_name,
                 'type': comp.competition_type,
                 'start_date': comp.start_date,
