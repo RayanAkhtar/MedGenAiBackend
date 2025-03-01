@@ -5,7 +5,8 @@ from __init__ import db
 from services.admin.heatmapfeedback import (
     get_image_by_id,
     get_image_confusion_matrix,
-    get_matching_feedback_for_image
+    get_matching_feedback_for_image,
+    get_data_for_image
 )
 
 bp = Blueprint('adminHeatmap', __name__)
@@ -24,6 +25,9 @@ def get_image_by_id_route(image_id):
 def get_matching_feedback_for_image_route(image_id):
     return jsonify(get_matching_feedback_for_image(image_id))
 
+@bp.route('/admin/getImageData/<image_id>', methods=['GET'])
+def get_data_for_image_route(image_id):
+    return jsonify(get_data_for_image(image_id))
 
 @bp.route('/admin/getImageMlMetrics/<image_id>', methods=['GET'])
 def get_image_ml_metrics(image_id):
