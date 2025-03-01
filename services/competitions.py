@@ -7,15 +7,18 @@ from flask import jsonify
 # Admin only
 def create_competition(name, game_type, expiry, game_code):
     """
-    Creates a new competition and returns the competition ID.
+    Create a new game first then gets the game id from it.
+    Creates a new competition using that same id.
     """
     try:
+        
+        
         new_competition = Competition(
+            competition_id=game_code,
             competition_name=name,
             competition_type=game_type,
             start_date=datetime.now(),
             end_date=expiry,
-            game_code=game_code
         )
         db.session.add(new_competition)
         db.session.commit()
