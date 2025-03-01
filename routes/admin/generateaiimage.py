@@ -44,10 +44,13 @@ def save_generated_image():
     file_path = os.path.join(UPLOAD_FOLDER, filename)
 
     try:
-        # Save the image to the filesystem
         image.save(file_path)
 
-        # Insert record into the database
+        if gender == 'any':
+            gender = None
+        if disease == 'any':
+            disease = None
+
         new_image = Images(
             image_path=file_path,
             image_type="ai",
