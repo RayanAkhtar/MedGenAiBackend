@@ -11,7 +11,7 @@ def create():
   return create_competition(json_data.name, json_data.game_type, json_data.expiry, json_data.game_code);
 
 @bp.route('/api/competitions/all', methods=['GET'])
-def get_competition():
+def get_competition_all():
     """
     Returns a list of all competitions
     """
