@@ -52,7 +52,6 @@ def save_generated_image():
             disease = None
 
         path_for_db = "/" + "/".join(file_path.split("/")[-2:])
-        print("path is", path_for_db)
 
         new_image = Images(
             image_path=path_for_db,
