@@ -7,6 +7,10 @@ on:
       - admin
       # Add more branches as needed
 
+concurrency:
+  group: deploy-backend-${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -46,8 +50,7 @@ jobs:
             git fetch origin ${{ env.BRANCH_NAME }}
             git checkout ${{ env.BRANCH_NAME }}
             git pull origin ${{ env.BRANCH_NAME }}
-            docker stop ${{ env.CONTAINER_NAME }} || true
-            docker rm ${{ env.CONTAINER_NAME }} || true
+            docker rm -f ${{ env.CONTAINER_NAME }} || true
             cd
             docker build -t ${{ env.CONTAINER_NAME }} -f MedGenAiBackend/Dockerfile .
             cd MedGenAiBackend
