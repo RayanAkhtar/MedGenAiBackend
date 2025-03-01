@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - admin
+      - admin-user-games
       # Add more branches as needed
 
 concurrency:
