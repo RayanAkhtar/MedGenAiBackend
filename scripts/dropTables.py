@@ -56,8 +56,7 @@ def create_tables():
             exp INT NOT NULL DEFAULT 0,
             games_started INT NOT NULL DEFAULT 0,
             games_won INT NOT NULL DEFAULT 0,
-            score INT NOT NULL DEFAULT 0,
-            firebase_uid VARCHAR(128) NOT NULL
+            score INT NOT NULL DEFAULT 0
         );
         """,
         """
