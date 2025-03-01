@@ -42,13 +42,15 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ~/MedGenAiBackend
+            cd MedGenAiBackend
             git fetch origin ${{ env.BRANCH_NAME }}
             git checkout ${{ env.BRANCH_NAME }}
             git pull origin ${{ env.BRANCH_NAME }}
             docker stop ${{ env.CONTAINER_NAME }} || true
             docker rm ${{ env.CONTAINER_NAME }} || true
-            docker build -t ${{ env.CONTAINER_NAME }} .
+            cd
+            docker build -t ${{ env.CONTAINER_NAME }} -f MedGenAiBackend/Dockerfile .
+            cd MedGenAiBackend
             docker run -d --name ${{ env.CONTAINER_NAME }} \
               -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
               --env-file=.env \
