@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - admin
+      - competitions
       # Add more branches as needed
 
 concurrency:
@@ -33,6 +34,10 @@ jobs:
             echo "BRANCH_NAME=admin" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-admin" >> $GITHUB_ENV
             echo "APP_PORT=5329" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF#refs/heads/}" == "competitions" ]]; then
+            echo "BRANCH_NAME=competitions" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=backend-competitions" >> $GITHUB_ENV
+            echo "APP_PORT=5341" >> $GITHUB_ENV
           else
             echo "Branch not configured for deployment"
             exit 1
