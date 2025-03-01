@@ -7,6 +7,10 @@ on:
       - admin
       # Add more branches as needed
 
+concurrency:
+  group: deploy-backend-${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -25,9 +29,9 @@ jobs:
             echo "BRANCH_NAME=main" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-main" >> $GITHUB_ENV
             echo "APP_PORT=5328" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF#refs/heads/}" == "dev" ]]; then
-            echo "BRANCH_NAME=dev" >> $GITHUB_ENV
-            echo "CONTAINER_NAME=backend-dev" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF#refs/heads/}" == "admin" ]]; then
+            echo "BRANCH_NAME=admin" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=backend-admin" >> $GITHUB_ENV
             echo "APP_PORT=5329" >> $GITHUB_ENV
           else
             echo "Branch not configured for deployment"
@@ -46,8 +50,7 @@ jobs:
             git fetch origin ${{ env.BRANCH_NAME }}
             git checkout ${{ env.BRANCH_NAME }}
             git pull origin ${{ env.BRANCH_NAME }}
-            docker stop ${{ env.CONTAINER_NAME }} || true
-            docker rm ${{ env.CONTAINER_NAME }} || true
+            docker rm -f ${{ env.CONTAINER_NAME }} || true
             cd
             docker build -t ${{ env.CONTAINER_NAME }} -f MedGenAiBackend/Dockerfile .
             cd MedGenAiBackend
