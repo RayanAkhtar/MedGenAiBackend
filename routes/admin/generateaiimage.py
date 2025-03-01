@@ -51,8 +51,11 @@ def save_generated_image():
         if disease == 'any':
             disease = None
 
+        path_for_db = "/" + "/".join(file_path.split("/")[-2:])
+        print("path is", path_for_db)
+
         new_image = Images(
-            image_path=file_path,
+            image_path=path_for_db,
             image_type="ai",
             upload_time=datetime.utcnow(),
             gender=gender,
