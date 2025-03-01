@@ -37,6 +37,35 @@ def get_matching_feedback_for_image(image_id):
         db.session.rollback()
         return {"error": str(e)}
 
+def get_data_for_image(image_id):
+    try:
+        result = (
+            db.session.query(
+                Images.age, Images.disease, Images.gender, Images.image_path, Images.image_type, Images.upload_time, Images.image_id
+            )
+            .filter(Images.image_id == image_id)
+            .first()
+        )
+
+        if result is None:
+            return {"error": "Image not found"}
+
+        image_data = {
+            "age": result.age,
+            "disease": result.disease,
+            "gender": result.gender,
+            "image_path": result.image_path,
+            "image_type": result.image_type,
+            "upload_time": result.upload_time,
+            "image_id": result.image_id
+        }
+
+        return image_data
+    
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
+
 
 def get_image_confusion_matrix(image_id):
     try:

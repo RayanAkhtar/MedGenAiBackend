@@ -33,11 +33,11 @@ def insert_test_data():
 
         # Users
         """
-INSERT INTO users (user_id, username, level, exp, games_started, games_won, score, firebase_uid)
+INSERT INTO users (user_id, username, level, exp, games_started, games_won, score)
 VALUES 
-    (1, 'test_user1', 1, 100, 5, 3, 120, 'uid_1'),
-    (2, 'test_user2', 2, 150, 7, 5, 180, 'uid_2'),
-    (3, 'test_user3', 3, 200, 8, 4, 220, 'uid_3');
+    (1, 'test_user1', 1, 100, 5, 3, 120),
+    (2, 'test_user2', 2, 150, 7, 5, 180),
+    (3, 'test_user3', 3, 200, 8, 4, 220);
 
         """,
 

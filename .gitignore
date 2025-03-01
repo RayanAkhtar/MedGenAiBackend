@@ -171,13 +171,13 @@ cython_debug/
 .pypirc
 
 #Script
-/scripts
+scripts/
 testscript.py
 
 medgenaifirebase.json
 
 #SQL stuff
-/migrations
+migrations/
 
 *.pem
 *.sql
