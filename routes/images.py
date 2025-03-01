@@ -1,8 +1,12 @@
-from flask import jsonify, send_from_directory, Blueprint, request
+from flask import jsonify, send_from_directory, Blueprint, request, current_app
 from services.images import get_image_list, get_images_rand
 import os
+import logging
+import sys
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 bp = Blueprint('images', __name__)
+logging.basicConfig(level=logging.DEBUG)
 
 @bp.route('/api/images', methods=['GET'])
 def list_images():
@@ -23,11 +27,12 @@ def view_image(image_path):
     # Debugging output
     print("Current Directory:", os.getcwd())
     print("Base Images Path:", BASE_IMAGES_PATH)
-
+    current_app.logger.debug(f"Current Directory: {os.getcwd()}")
+    current_app.logger.debug(f"Base Images Path: {BASE_IMAGES_PATH}")
     # Join the base path with the relative image path
     full_image_path = os.path.join(BASE_IMAGES_PATH, image_path)
     print("Full Image path:", full_image_path)
-
+    current_app.logger.debug(f"Full Image path: {full_image_path}")
     # Serve the file if it exists
     if os.path.exists(full_image_path):
         return send_from_directory(BASE_IMAGES_PATH, image_path)

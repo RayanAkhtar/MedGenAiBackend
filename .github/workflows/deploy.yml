@@ -1,0 +1,62 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+      - admin
+      # Add more branches as needed
+
+concurrency:
+  group: deploy-backend-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: med-gen-ai-backend
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Add more elif statements for each branch as needed
+      - name: Set Environment Variables Based on Branch
+        run: |
+          if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
+            echo "BRANCH_NAME=main" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=backend-main" >> $GITHUB_ENV
+            echo "APP_PORT=5328" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF#refs/heads/}" == "admin" ]]; then
+            echo "BRANCH_NAME=admin" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=backend-admin" >> $GITHUB_ENV
+            echo "APP_PORT=5329" >> $GITHUB_ENV
+          else
+            echo "Branch not configured for deployment"
+            exit 1
+          fi
+
+      - name: SSH into EC2 and Deploy
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          port: 22
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd MedGenAiBackend
+            git fetch origin ${{ env.BRANCH_NAME }}
+            git checkout ${{ env.BRANCH_NAME }}
+            git pull origin ${{ env.BRANCH_NAME }}
+            docker rm -f ${{ env.CONTAINER_NAME }} || true
+            cd
+            docker build -t ${{ env.CONTAINER_NAME }} -f MedGenAiBackend/Dockerfile .
+            cd MedGenAiBackend
+            docker run -d --name ${{ env.CONTAINER_NAME }} \
+              -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
+              --env-file=.env \
+              -e PORT=${{ env.APP_PORT }} \
+              -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json \
+              ${{ env.CONTAINER_NAME }}
