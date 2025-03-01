@@ -38,6 +38,7 @@ def create_app(test_config=None):
         from routes import bp
         from routes.profile import bp as profile_bp
         from routes.images import bp as image_bp
+        from routes.competitions import bp as comp_bp
 
         from routes.admin.admin import bp as admin_bp
         from routes.admin.download import bp as admin_download_bp
@@ -52,6 +53,7 @@ def create_app(test_config=None):
         from routes.user_dashboard import user_dashboard
         app.register_blueprint(bp)
         app.register_blueprint(profile_bp)
+        app.register_blueprint(comp_bp)
 
         app.register_blueprint(admin_bp)
         app.register_blueprint(admin_download_bp)
