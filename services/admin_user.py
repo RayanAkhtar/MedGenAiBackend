@@ -159,15 +159,15 @@ def create_user_game_session(game_id, user_id):
         new_session = UserGameSession(
             game_id=game_id,
             user_id=user_id,
-            start_time=datetime.utcnow(),
+            start_time=datetime.now(),
             session_status="active"  # Default status
         )
 
         db.session.add(new_session)
         db.session.commit()
-        return new_session  # Return the created session object
+        return new_session, 200  # Return the created session object
 
     except SQLAlchemyError as e:
         db.session.rollback()
         print(f"Error creating user game session: {e}")
-        return None  # Return None if an error occurs
+        return {'error': str(e)}, 404  # Return None if an error occurs
