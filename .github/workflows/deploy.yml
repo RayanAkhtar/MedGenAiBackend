@@ -27,21 +27,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Debug Branch Info
-        run: |
-          echo "GITHUB_REF: $GITHUB_REF"
-          echo "GITHUB_REF_NAME: $GITHUB_REF_NAME"
-          echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF"
-          echo "GITHUB_BASE_REF: $GITHUB_BASE_REF"
-
       # Add more elif statements for each branch as needed
       - name: Set Environment Variables Based on Branch
         run: |
-          if [[ "${GITHUB_BASE_REF}" == "main" || "${GITHUB_HEAD_REF}" == "main" ]]; then
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
             echo "BRANCH_NAME=main" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-main" >> $GITHUB_ENV
             echo "APP_PORT=5328" >> $GITHUB_ENV
-          elif [[ "${GITHUB_BASE_REF}" == "admin" || "${GITHUB_HEAD_REF}" == "admin" ]]; then
+          elif [[ "${GITHUB_REF_NAME}" == "admin" ]]; then
             echo "BRANCH_NAME=admin" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-admin" >> $GITHUB_ENV
             echo "APP_PORT=5329" >> $GITHUB_ENV
