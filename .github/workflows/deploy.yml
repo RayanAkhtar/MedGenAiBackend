@@ -30,11 +30,11 @@ jobs:
       # Add more elif statements for each branch as needed
       - name: Set Environment Variables Based on Branch
         run: |
-          if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
+          if [[ "${GITHUB_REF#refs/heads/}" == "main" || "${GITHUB_HEAD_REF}" == "main" ]]; then
             echo "BRANCH_NAME=main" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-main" >> $GITHUB_ENV
             echo "APP_PORT=5328" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF#refs/heads/}" == "admin" ]]; then
+          elif [[ "${GITHUB_REF#refs/heads/}" == "admin" || "${GITHUB_HEAD_REF}" == "admin" ]]; then
             echo "BRANCH_NAME=admin" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-admin" >> $GITHUB_ENV
             echo "APP_PORT=5329" >> $GITHUB_ENV
