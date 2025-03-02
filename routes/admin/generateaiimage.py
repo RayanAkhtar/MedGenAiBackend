@@ -2,8 +2,16 @@ import os
 from flask import Blueprint, request, jsonify, send_file
 from services.admin.generateaiimage import generate_image
 from werkzeug.utils import secure_filename
+from __init__ import db
+from models import Images
+from datetime import datetime
 
 bp = Blueprint("adminGenerate", __name__)
+
+UPLOAD_FOLDER = "../MedGenAI-Images/Images/generated"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+BASE_IMAGES_PATH = os.path.abspath(os.path.join(os.getcwd(), "../MedGenAI-Images/Images"))
 
 @bp.route("/admin/generateImage", methods=["GET"])
 def generate_image_route():
@@ -18,12 +26,12 @@ def generate_image_route():
         return jsonify({"error": "No matching images found"}), 404
 
 
+@bp.route("/admin/saveGeneratedImage", methods=["POST"])
+def save_generated_image():
+    gender = request.form.get("gender", "any")
+    age = request.form.get("age", "any")
+    disease = request.form.get("disease", "any")
 
-UPLOAD_FOLDER = "../MedGenAI-Images/Images/generated"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-@bp.route("/admin/saveImage", methods=["POST"])
-def save_image_route():
     if "image" not in request.files:
         return jsonify({"error": "No file provided"}), 400
 
@@ -37,11 +45,35 @@ def save_image_route():
 
     try:
         image.save(file_path)
-        return jsonify({"message": "Image saved successfully", "filePath": file_path}), 200
+
+        if gender == 'any':
+            gender = None
+        if disease == 'any':
+            disease = None
+
+        path_for_db = "/" + "/".join(file_path.split("/")[-2:])
+
+        new_image = Images(
+            image_path=path_for_db,
+            image_type="ai",
+            upload_time=datetime.utcnow(),
+            gender=gender,
+            age=age,
+            disease=disease
+        )
+        db.session.add(new_image)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Image saved successfully",
+            "filePath": file_path,
+            "image_id": new_image.image_id
+        }), 200
+
     except Exception as e:
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-BASE_IMAGES_PATH = os.path.abspath(os.path.join(os.getcwd(), "../MedGenAI-Images/Images"))
 
 @bp.route('/admin/<path:filename>')
 def serve_image(filename):
