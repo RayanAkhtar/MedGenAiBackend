@@ -121,7 +121,23 @@ def get_user_by_id(username):
 def get_game_by_id(game_id):
     return jsonify(get_game_by_game_id(game_id))
 
-@bp.route('/admin/newGameSession/<int:game_id>/<int:user_id>')
-def create_new_user_game_session(game_id, user_id):
+@bp.route('/admin/newGameSession', methods=['POST'])
+def create_new_user_game_session():
+    # Extract JSON from the request body
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Missing JSON body'}), 400
+    
+    # Get fields from the JSON payload
+    game_id = data.get('game_id')
+    user_id = data.get('user_id')
+    
+    # Validate that both fields exist
+    if game_id is None or user_id is None:
+        return jsonify({'error': 'Missing "game_id" or "user_id"'}), 400
+    
+    # Call your function with the retrieved values
     res, code = create_user_game_session(game_id, user_id)
-    return jsonify({'status': code})
+    
+    # Return a JSON response
+    return jsonify({'status': code}), 201
