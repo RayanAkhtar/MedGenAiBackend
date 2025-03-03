@@ -58,8 +58,12 @@ def get_feedback_with_filters(image_type=None, resolved=None, sex=None, disease=
             query = query.filter(Images.disease.like(f"%{disease}%"))
 
         if age_range:
-            min_age, max_age = map(int, age_range.split('-'))
-            query = query.filter(Images.age.between(min_age, max_age))
+            if age_range == "60+":
+                min_age = 60
+                max_age = 999
+            else:
+                min_age, max_age = map(int, age_range.split('-'))
+                query = query.filter(Images.age.between(min_age, max_age))
 
         # Sorting
         valid_sort_fields = {
