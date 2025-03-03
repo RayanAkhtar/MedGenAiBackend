@@ -125,3 +125,49 @@ def get_user_data_by_username(username):
 
     except Exception as e:
         return {"error": f"Database error: {str(e)}"}, 500  # Return dictionary
+    
+
+def get_game_by_game_id(game_id):
+    try:
+        # Fetch the game from the database
+        game = db.session.query(Game).filter_by(game_id=game_id).first()
+
+        # If game not found, return an error message
+        if not game:
+            return {"error": "Game not found"}
+
+        # Construct the response
+        game_data = {
+            "game_id": game.game_id,
+            "game_mode": game.game_mode,
+            "date_created": game.date_created,
+            "game_board": game.game_board,
+            "game_status": game.game_status,
+            "expiry_date": game.expiry_date,
+            "created_by": game.created_by,
+       }
+
+        return game_data, 200
+    except Exception as e:
+        return {"error": str(e)}, 404
+    
+
+def create_user_game_session(game_id, user_id):
+    """Creates a new UserGameSession and commits it to the database."""
+    from sqlalchemy.exc import SQLAlchemyError
+    try:
+        new_session = UserGameSession(
+            game_id=game_id,
+            user_id=user_id,
+            start_time=datetime.now(),
+            session_status="active"  # Default status
+        )
+
+        db.session.add(new_session)
+        db.session.commit()
+        return new_session, 200  # Return the created session object
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print(f"Error creating user game session: {e}")
+        return {'error': str(e)}, 404  # Return None if an error occurs
