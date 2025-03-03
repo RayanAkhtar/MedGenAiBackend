@@ -154,21 +154,30 @@ def get_game_by_game_id(game_id):
     
 
 def create_user_game_session(game_id, user_id):
-    """Creates a new UserGameSession and commits it to the database."""
-    from sqlalchemy.exc import SQLAlchemyError
-    try:
-        new_session = UserGameSession(
-            game_id=game_id,
-            user_id=user_id,
-            start_time=datetime.now(),
-            session_status="active"  # Default status
-        )
+	"""Creates a new UserGameSession and commits it to the database."""
+	return create_multiple_game_sessions(game_id, [user_id])
+    
+def create_multiple_game_sessions(game_id, user_ids):
+	"""Creates multiple UserGameSession objects for a given game_id and list of user_ids."""
+	from sqlalchemy.exc import SQLAlchemyError
+	try:
+		# Create a list of UserGameSession objects
+		new_sessions = []
+		for user_id in user_ids:
+			new_session = UserGameSession(
+				game_id=game_id,
+				user_id=user_id,
+				start_time=datetime.now(),
+				session_status="active"  # Default status
+			)
+			new_sessions.append(new_session)
 
-        db.session.add(new_session)
-        db.session.commit()
-        return new_session, 200  # Return the created session object
+		# Add all sessions to the session and commit
+		db.session.add_all(new_sessions)
+		db.session.commit()
+		return new_sessions, 200  # Return the created sessions
 
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        print(f"Error creating user game session: {e}")
-        return {'error': str(e)}, 404  # Return None if an error occurs
+	except SQLAlchemyError as e:
+		db.session.rollback()
+		print(f"Error creating user game sessions: {e}")
+		return {'error': str(e)}, 404  # Return None if an error occurs

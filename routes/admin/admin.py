@@ -141,3 +141,10 @@ def create_new_user_game_session():
     
     # Return a JSON response
     return jsonify({'status': code}), 201
+@bp.route('/admin/newGameSession/multi', methods=['POST'])
+def create_new_user_game_session_multi():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Missing JSON body'}), 400
+    game_id = data.get('game_id')
+    user_ids = data.get('user_ids')
