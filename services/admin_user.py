@@ -131,6 +131,7 @@ def get_game_by_game_id(game_id):
     try:
         # Fetch the game from the database
         game = db.session.query(Game).filter_by(game_id=game_id).first()
+        created_by = db.session.query(Users).filter_by(user_id=game.created_by).first()
 
         # If game not found, return an error message
         if not game:
@@ -144,7 +145,7 @@ def get_game_by_game_id(game_id):
             "game_board": game.game_board,
             "game_status": game.game_status,
             "expiry_date": game.expiry_date,
-            "created_by": game.created_by,
+            "created_by": created_by.username,
        }
 
         return game_data, 200
