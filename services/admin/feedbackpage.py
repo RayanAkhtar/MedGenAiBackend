@@ -58,7 +58,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sex=None, disease=
             query = query.filter(Images.disease.like(f"%{disease}%"))
 
         if age_range:
-            if age_range == "60":
+            if age_range == "60 ":
                 min_age = 60
                 max_age = 999
             else:
@@ -135,7 +135,7 @@ def get_feedback_count(image_type=None, resolved=None, sex=None, disease=None, a
             query = query.filter(Images.disease.like(f"%{disease}%"))
 
         if age_range:
-            if age_range == "60":
+            if age_range == "60 ":
                 min_age = 60
                 max_age = 999
             else:
