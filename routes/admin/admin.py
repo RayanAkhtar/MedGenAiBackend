@@ -13,8 +13,11 @@ from services.admin.admin import (
     filter_users_by_tags,
     get_metadata_counts
 )
-from services.admin_user import create_user_game_session, get_game_by_game_id, get_user_data_by_username, get_users_with_filters
 
+from services.admin_user import get_user_data_by_username, get_users_with_filters
+from sqlalchemy import func, extract
+from models import UserGuess
+from services.admin_user import create_user_game_session, get_game_by_game_id, get_user_data_by_username, get_users_with_filters
 
 bp = Blueprint('admin', __name__)
 
@@ -117,6 +120,50 @@ def get_user_by_id(username):
     user_data = get_user_data_by_username(username)
     return jsonify(user_data)
 
+
+@bp.route('/admin/engagementHeatmap', methods=['GET'])
+def get_engagement_heatmap():
+    try:
+        result = db.session.query(
+            extract('year', UserGuess.date_of_guess).label('year'),
+            extract('month', UserGuess.date_of_guess).label('month'),
+            extract('week', UserGuess.date_of_guess).label('week'),
+            extract('day', UserGuess.date_of_guess).label('day'),
+            func.count().label('engagement')
+        ).group_by('year', 'month', 'week', 'day').order_by('year', 'month', 'week', 'day').all()
+
+        engagement_data = {}
+        for row in result:
+            year = int(row.year)
+            month = int(row.month)
+            week = int(row.week)
+            day = int(row.day)
+            engagement = row.engagement
+
+            if year not in engagement_data:
+                engagement_data[year] = {'data': []}
+
+            engagement_data[year]['data'].append({
+                'month': month,
+                'week': week,
+                'day': day,
+                'engagement': engagement
+            })
+
+        formatted_data = []
+        for year, data in engagement_data.items():
+            formatted_data.append({
+                'year': year,
+                'data': data['data']
+            })
+
+        return jsonify(formatted_data)
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @bp.route('/admin/getGame/<int:game_id>', methods=['GET'])
 def get_game_by_id(game_id):
     return jsonify(get_game_by_game_id(game_id))
@@ -141,3 +188,4 @@ def create_new_user_game_session():
     
     # Return a JSON response
     return jsonify({'status': code}), 201
+
