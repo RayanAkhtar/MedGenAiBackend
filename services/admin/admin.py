@@ -179,6 +179,17 @@ def upload_image_service(request, image_type):
         flash('No selected file')
         return jsonify({'error': 'No selected file'}), 400
 
+    sex = request.form.get('sex')
+    age = request.form.get('age', type=int)
+    disease = request.form.get('disease')
+
+    if sex not in ['male', 'female']:
+        return jsonify({'error': 'Invalid sex value'}), 400
+    if age is None or not (18 <= age <= 100):
+        return jsonify({'error': 'Invalid age value'}), 400
+    if disease not in ['none', 'pleural_effusion']:
+        return jsonify({'error': 'Invalid disease value'}), 400
+
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         
@@ -196,15 +207,18 @@ def upload_image_service(request, image_type):
         file.save(filepath)
 
         query = text("""
-            INSERT INTO images (image_path, image_type, upload_time)
-            VALUES (:image_path, :image_type, :upload_time)
+            INSERT INTO images (image_path, image_type, upload_time, gender, age, disease)
+            VALUES (:image_path, :image_type, :upload_time, :gender, :age, :disease)
             RETURNING image_id
         """)
 
         params = {
             'image_path': "/" + os.path.join(folder, filename),
             'image_type': image_type,
-            'upload_time': datetime.utcnow()
+            'upload_time': datetime.utcnow(),
+            'gender': sex,
+            'age': age,
+            'disease': disease
         }
 
         try:
