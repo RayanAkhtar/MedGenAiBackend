@@ -187,7 +187,7 @@ def upload_image_service(request, image_type):
         return jsonify({'error': 'Invalid sex value'}), 400
     if age is None or not (18 <= age <= 100):
         return jsonify({'error': 'Invalid age value'}), 400
-    if disease not in ['none', 'pleural_effusion']:
+    if disease not in ['none', 'Pleural_Effusion']:
         return jsonify({'error': 'Invalid disease value'}), 400
 
     if file and allowed_file(file.filename):
