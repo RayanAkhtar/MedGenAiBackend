@@ -12,8 +12,12 @@ bp = Blueprint('adminFeedback', __name__)
 def get_feedbacks_route():
     image_type = request.args.get('image_type')
     resolved = request.args.get('resolved')
+    sex = request.args.get('sex')
+    disease = request.args.get('disease')
+    age_range = request.args.get('age_range')
     sort_by = request.args.get('sort_by')
     sort_order = request.args.get('sort_order', 'asc')
+
     resolved = True if resolved == 'true' else (False if resolved == 'false' else None)
 
     page = request.args.get('page', 1, type=int)
@@ -22,6 +26,9 @@ def get_feedbacks_route():
     feedback_data = get_feedback_with_filters(
         image_type=image_type, 
         resolved=resolved, 
+        sex=sex,
+        disease=disease,
+        age_range=age_range,
         sort_by=sort_by,
         sort_order=sort_order, 
         limit=limit, 
@@ -36,9 +43,19 @@ def get_feedbacks_route():
 def get_feedback_count_route():
     image_type = request.args.get('image_type')
     resolved = request.args.get('resolved')
+    sex = request.args.get('sex')
+    disease = request.args.get('disease')
+    age_range = request.args.get('age_range')
 
     resolved = True if resolved == 'true' else (False if resolved == 'false' else None)
-    total_count = get_feedback_count(image_type=image_type, resolved=resolved)
+
+    total_count = get_feedback_count(
+        image_type=image_type, 
+        resolved=resolved, 
+        sex=sex, 
+        disease=disease, 
+        age_range=age_range
+    )
 
     return jsonify({'total_count': total_count})
 

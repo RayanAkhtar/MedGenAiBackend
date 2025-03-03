@@ -1,9 +1,10 @@
 from __init__ import db
 from models import Images, Feedback, FeedbackUser, UserGuess
-from sqlalchemy import func, case, desc, asc, text
+from sqlalchemy import func, case, desc, asc
 from sqlalchemy.orm import aliased
 
-def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort_order='asc', limit=20, offset=0):
+
+def get_feedback_with_filters(image_type=None, resolved=None, sex=None, disease=None, age_range=None, sort_by=None, sort_order='asc', limit=20, offset=0):
     try:
         # Alias for Feedback table to avoid duplication due to joins
         feedback_alias = aliased(Feedback)
@@ -49,6 +50,16 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
                     (func.coalesce(feedback_alias.resolved, True) == False, 1),
                     else_=None
                 )) > 0)
+
+        if sex:
+            query = query.filter(Images.gender == sex)
+
+        if disease:
+            query = query.filter(Images.disease.like(f"%{disease}%"))
+
+        if age_range:
+            min_age, max_age = map(int, age_range.split('-'))
+            query = query.filter(Images.age.between(min_age, max_age))
 
         # Sorting
         valid_sort_fields = {
@@ -96,7 +107,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sort_by=None, sort
         return []
 
 
-def get_feedback_count(image_type=None, resolved=None):
+def get_feedback_count(image_type=None, resolved=None, sex=None, disease=None, age_range=None):
     try:
         # Base query
         query = (
@@ -112,6 +123,16 @@ def get_feedback_count(image_type=None, resolved=None):
 
         if resolved is not None:
             query = query.filter(Feedback.resolved == resolved)
+
+        if sex:
+            query = query.filter(Images.gender == sex)
+
+        if disease:
+            query = query.filter(Images.disease.like(f"%{disease}%"))
+
+        if age_range:
+            min_age, max_age = map(int, age_range.split('-'))
+            query = query.filter(Images.age.between(min_age, max_age))
 
         # Execute query
         total_count = query.scalar()
