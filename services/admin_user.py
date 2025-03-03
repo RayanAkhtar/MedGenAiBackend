@@ -114,18 +114,57 @@ def get_users_ordered():
     
 def get_user_data_by_username(username):
     try:
-        query = text("SELECT * FROM users WHERE username = CAST(:username AS VARCHAR);")
-        result = db.session.execute(query, {'username': str(username)})  # Ensure user_id is string
+        query = text("""
+            SELECT
+                u.user_id,u.username,u.level,u.exp,u.games_started,u.games_won,u.score,
+
+                COALESCE(g.total_images_guessed, 0) AS total_images_guessed,
+                COALESCE(g.correct_guesses, 0) AS correct_guesses,
+                COALESCE(g.accuracy_percentage, 0) AS accuracy_percentage
+
+            FROM users u
+            LEFT JOIN (
+                SELECT
+                    ug.user_id,
+                    COUNT(*) AS total_images_guessed,
+                    SUM(
+                        CASE WHEN ug.user_guess_type = i.image_type
+                             THEN 1 ELSE 0 END
+                    ) AS correct_guesses,
+
+                    -- Calculate accuracy percentage
+                    CASE
+                        WHEN COUNT(*) = 0 THEN 0
+                        ELSE (
+                            SUM(
+                                CASE WHEN ug.user_guess_type = i.image_type
+                                     THEN 1 ELSE 0 END
+                            ) * 100.0
+                            / COUNT(*)
+                        )
+                    END AS accuracy_percentage
+
+                FROM user_guesses ug
+                JOIN images i ON ug.image_id = i.image_id
+                GROUP BY ug.user_id
+            ) AS g ON g.user_id = u.user_id
+
+            WHERE u.username = CAST(:username AS VARCHAR)
+        """)
+
+        result = db.session.execute(query, {'username': str(username)})
         row = result.fetchone()
 
         if not row:
-            return {"error": "User not found"}, 404  # Return a dict instead of jsonify()
+            return {"error": "User not found"}, 404
 
-        return dict(zip(result.keys(), row)), 200  # Return dictionary instead of jsonify()
+        # Convert the row to a dictionary
+        user_data = dict(zip(result.keys(), row))
+
+        return user_data, 200
 
     except Exception as e:
-        return {"error": f"Database error: {str(e)}"}, 500  # Return dictionary
-    
+        return {"error": f"Database error: {str(e)}"}, 500
 
 def get_game_by_game_id(game_id):
     try:
