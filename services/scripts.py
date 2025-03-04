@@ -1,10 +1,10 @@
 import os
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from __init__ import db
 from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags, CompetitionUser, Game, UserGameSession
-
+import random
 
 load_dotenv("../.env")
 CSV_FILE_PATH = "../MedGenAI-Images/Images/test_cfs.csv"
@@ -80,6 +80,35 @@ def setup_tables():
         print(f"An error occurred while setting up tables: {str(e)}")
         raise e
 
+def generate_random_date(start_year, end_year):
+    start_date = datetime(start_year, 1, 1)
+    end_date = datetime(end_year, 12, 31)
+    delta = end_date - start_date
+    random_day = random.randint(0, delta.days)
+    random_date = start_date + timedelta(days=random_day)
+    return random_date
+
+def generate_hundreds_of_user_guesses(num_guesses=500):
+    user_guesses = []
+    for i in range(1, num_guesses + 1):
+        session_id = random.randint(1, 5)
+        image_id = random.choice([111111, 111112, 111113])
+        user_id = random.randint(1, 3)
+        user_guess_type = random.choice(['ai', 'real'])
+        date_of_guess = generate_random_date(2023, 2025)
+
+        user_guess = UserGuess(
+            guess_id=i, 
+            session_id=session_id, 
+            image_id=image_id, 
+            user_id=user_id, 
+            user_guess_type=user_guess_type, 
+            date_of_guess=date_of_guess
+        )
+        user_guesses.append(user_guess)
+    return user_guesses
+
+
 def populate_tables():
     """Populate tables using SQLAlchemy insert."""
     try:
@@ -152,23 +181,13 @@ def populate_tables():
         ]
         
         db.session.add_all(images)
+        db.session.commit()
         print("Images successfully inserted.")
 
-
-        user_guesses = [
-            UserGuess(guess_id=1, session_id=1, image_id=111111, user_id=1, user_guess_type='ai', date_of_guess=datetime(2024, 2, 1)),
-            UserGuess(guess_id=2, session_id=1, image_id=111111, user_id=2, user_guess_type='real', date_of_guess=datetime(2024, 2, 2)),
-            UserGuess(guess_id=3, session_id=2, image_id=111111, user_id=3, user_guess_type='ai', date_of_guess=datetime(2024, 3, 5)),
-            UserGuess(guess_id=4, session_id=2, image_id=111111, user_id=1, user_guess_type='real', date_of_guess=datetime(2024, 4, 12)),
-            UserGuess(guess_id=5, session_id=3, image_id=111111, user_id=2, user_guess_type='ai', date_of_guess=datetime(2024, 4, 20)),
-            UserGuess(guess_id=6, session_id=3, image_id=111112, user_id=1, user_guess_type='real', date_of_guess=datetime(2024, 5, 10)),
-            UserGuess(guess_id=7, session_id=4, image_id=111112, user_id=3, user_guess_type='ai', date_of_guess=datetime(2024, 6, 1)),
-            UserGuess(guess_id=8, session_id=4, image_id=111113, user_id=2, user_guess_type='real', date_of_guess=datetime(2024, 7, 15)),
-            UserGuess(guess_id=9, session_id=5, image_id=111113, user_id=1, user_guess_type='ai', date_of_guess=datetime(2024, 8, 23))
-        ]
-        
+        user_guesses = generate_hundreds_of_user_guesses(num_guesses=500)
         db.session.add_all(user_guesses)
-        print("UserGuess successfully inserted.")
+        db.session.commit()
+        print(f"{len(user_guesses)} UserGuesses successfully inserted.")
 
         feedback = [
             Feedback(feedback_id=1, x=0, y=1, msg='Great image quality', resolved=False, date_added='2023-04-21', confidence=5),
@@ -180,6 +199,7 @@ def populate_tables():
         ]
         
         db.session.add_all(feedback)
+        db.session.commit()
         print("Feedback successfully inserted.")
 
         feedback_users = [
@@ -190,6 +210,7 @@ def populate_tables():
         ]
         
         db.session.add_all(feedback_users)
+        db.session.commit()
         print("FeedbackUsers successfully inserted.")
 
         competition_users = [
@@ -199,9 +220,8 @@ def populate_tables():
         ]
         
         db.session.add_all(competition_users)
-        print("Competition Users successfully inserted.")
-
         db.session.commit()
+        print("Competition Users successfully inserted.")
 
         print("Tables populated with initial data.")
         
