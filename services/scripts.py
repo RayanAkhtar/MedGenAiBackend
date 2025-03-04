@@ -88,10 +88,13 @@ def generate_random_date(start_year, end_year):
     random_date = start_date + timedelta(days=random_day)
     return random_date
 
-def generate_hundreds_of_user_guesses(num_guesses=500):
+def generate_hundreds_of_user_guesses_with_feedback(num_guesses=500):
     user_guesses = []
+    feedback = []
+    feedback_users = []
+    
     for i in range(1, num_guesses + 1):
-        session_id = random.randint(1, 5)
+        session_id = random.randint(1, 5) 
         image_id = random.choice([111111, 111112, 111113])
         user_id = random.randint(1, 3)
         user_guess_type = random.choice(['ai', 'real'])
@@ -106,8 +109,31 @@ def generate_hundreds_of_user_guesses(num_guesses=500):
             date_of_guess=date_of_guess
         )
         user_guesses.append(user_guess)
-    return user_guesses
+        
+        x, y = random.randint(0, 5), random.randint(0, 5)
+        msg = random.choice([
+            'Great image quality', 'Blurry in some areas', 'Perfect edge detection',
+            'Too dark in some areas', 'Background needs work', 'Noise in shadow areas'
+        ])
+        resolved = random.choice([True, False])
+        date_added = generate_random_date(2023, 2025)
+        confidence = random.randint(1, 60)
 
+        feedback_entry = Feedback(
+            feedback_id=i, 
+            x=x, 
+            y=y, 
+            msg=msg, 
+            resolved=resolved, 
+            date_added=date_added, 
+            confidence=confidence
+        )
+        feedback.append(feedback_entry)
+        
+        feedback_user = FeedbackUser(guess_id=i, feedback_id=i)
+        feedback_users.append(feedback_user)
+
+    return user_guesses, feedback, feedback_users
 
 def populate_tables():
     """Populate tables using SQLAlchemy insert."""
@@ -118,8 +144,7 @@ def populate_tables():
             Users(user_id=3, username="test_user3", level=3, exp=200, games_started=8, games_won=4, score=220)
         ]
         
-        db.session.add_all(users)
-        
+        db.session.add_all(users)        
         db.session.commit()
         print("Users successfully inserted.")
 
@@ -137,20 +162,19 @@ def populate_tables():
         ]
         
         db.session.add_all(games)
-        
         db.session.commit()
         print("Games successfully inserted.")
 
         sessions = [
-            UserGameSession(session_id=1, game_id=1, user_id="1", start_time=datetime(2024, 2, 1), completion_time=datetime(2024, 2, 5),
+            UserGameSession(session_id=1, game_id=1, user_id=1, start_time=datetime(2024, 2, 1), completion_time=datetime(2024, 2, 5),
                             session_status="completed", final_score=120, correct_guesses=10, total_guesses=12, time_taken=240),
-            UserGameSession(session_id=2, game_id=1, user_id="2", start_time=datetime(2024, 2, 2), completion_time=datetime(2024, 2, 6),
+            UserGameSession(session_id=2, game_id=1, user_id=2, start_time=datetime(2024, 2, 2), completion_time=datetime(2024, 2, 6),
                             session_status="completed", final_score=150, correct_guesses=13, total_guesses=15, time_taken=300),
-            UserGameSession(session_id=3, game_id=2, user_id="3", start_time=datetime(2024, 3, 1), completion_time=datetime(2024, 3, 5),
+            UserGameSession(session_id=3, game_id=2, user_id=3, start_time=datetime(2024, 3, 1), completion_time=datetime(2024, 3, 5),
                             session_status="completed", final_score=140, correct_guesses=12, total_guesses=15, time_taken=270),
-            UserGameSession(session_id=4, game_id=3, user_id="1", start_time=datetime(2024, 4, 1), completion_time=datetime(2024, 4, 5),
+            UserGameSession(session_id=4, game_id=3, user_id=1, start_time=datetime(2024, 4, 1), completion_time=datetime(2024, 4, 5),
                             session_status="completed", final_score=110, correct_guesses=9, total_guesses=12, time_taken=240),
-            UserGameSession(session_id=5, game_id=4, user_id="2", start_time=datetime(2024, 5, 1), completion_time=datetime(2024, 5, 5),
+            UserGameSession(session_id=5, game_id=4, user_id=2, start_time=datetime(2024, 5, 1), completion_time=datetime(2024, 5, 5),
                             session_status="completed", final_score=130, correct_guesses=11, total_guesses=14, time_taken=260)
         ]
         
@@ -167,7 +191,6 @@ def populate_tables():
         ]
         
         db.session.add_all(competitions)
-        
         db.session.commit()
         print("Competitions successfully inserted.")
 
@@ -184,34 +207,12 @@ def populate_tables():
         db.session.commit()
         print("Images successfully inserted.")
 
-        user_guesses = generate_hundreds_of_user_guesses(num_guesses=500)
+        user_guesses, feedback_entries, feedback_users_entries = generate_hundreds_of_user_guesses_with_feedback(num_guesses=500)  # Generate 500 user guesses with feedback
         db.session.add_all(user_guesses)
+        db.session.add_all(feedback_entries)
+        db.session.add_all(feedback_users_entries)
         db.session.commit()
-        print(f"{len(user_guesses)} UserGuesses successfully inserted.")
-
-        feedback = [
-            Feedback(feedback_id=1, x=0, y=1, msg='Great image quality', resolved=False, date_added='2023-04-21', confidence=5),
-            Feedback(feedback_id=2, x=1, y=0, msg='Background needs work', resolved=False, date_added='2023-04-21', confidence=10),
-            Feedback(feedback_id=3, x=2, y=3, msg='Perfect edge detection', resolved=False, date_added='2023-04-21', confidence=23),
-            Feedback(feedback_id=4, x=3, y=4, msg='Blurry in corners', resolved=False, date_added='2023-04-21', confidence=54),
-            Feedback(feedback_id=5, x=4, y=5, msg='Noise in shadow areas', resolved=False, date_added='2023-04-21', confidence=56),
-            Feedback(feedback_id=6, x=0, y=2, msg='Too dark in some areas', resolved=False, date_added='2023-04-21', confidence=43)
-        ]
-        
-        db.session.add_all(feedback)
-        db.session.commit()
-        print("Feedback successfully inserted.")
-
-        feedback_users = [
-            FeedbackUser(guess_id=1, feedback_id=1),
-            FeedbackUser(guess_id=2, feedback_id=2),
-            FeedbackUser(guess_id=3, feedback_id=3),
-            FeedbackUser(guess_id=4, feedback_id=4)
-        ]
-        
-        db.session.add_all(feedback_users)
-        db.session.commit()
-        print("FeedbackUsers successfully inserted.")
+        print(f"{len(user_guesses)} UserGuesses and {len(feedback_entries)} Feedbacks successfully inserted.")
 
         competition_users = [
             CompetitionUser(competition_id=1, user_id=1, score=100),
@@ -228,7 +229,3 @@ def populate_tables():
     except Exception as e:
         print(f"An error occurred while populating tables: {str(e)}")
         raise e
-
-
-
-
