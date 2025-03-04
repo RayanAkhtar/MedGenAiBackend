@@ -7,6 +7,16 @@ from __init__ import db
 from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags, CompetitionUser
 
 
+# Load environment variables
+load_dotenv()
+BASE_URL = os.getenv("BASE_URL")
+CSV_FILE_PATH = "../MedGenAI-Images/Images/test_cfs.csv"
+BATCH_SIZE = 500  # Inserting this many images at a time
+
+COLUMNS_TO_PROCESS = [
+    "path_cf_Male", "path_cf_Female", "path_cf_Null", "path_cf_No_disease", "path_cf_Pleural_Effusion"
+]
+
 def execute_sql_query(query):
     """Helper function to send POST requests with a SQL query."""
     response = requests.post(
@@ -17,16 +27,6 @@ def execute_sql_query(query):
     print(f"Query: {query[:50]}...")
     print(f"Response Status: {response.status_code}, Response Text: {response.text}")
     return response
-
-# Load environment variables
-load_dotenv()
-BASE_URL = os.getenv("BASE_URL")
-CSV_FILE_PATH = "../MedGenAI-Images/Images/test_cfs.csv"
-BATCH_SIZE = 500  # Inserting this many images at a time
-
-COLUMNS_TO_PROCESS = [
-    "path_cf_Male", "path_cf_Female", "path_cf_Null", "path_cf_No_disease", "path_cf_Pleural_Effusion"
-]
 
 # Function to drop all relevant tables
 def drop_tables():
