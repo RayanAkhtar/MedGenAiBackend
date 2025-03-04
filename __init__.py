@@ -45,6 +45,7 @@ def create_app(test_config=None):
         from routes.admin.metrics import bp as admin_metrics_bp
         from routes.admin.heatmapfeedback import bp as admin_heatmap_bp
         from routes.admin.generateaiimage import bp as generate_image_bp
+        from routes.scripts import bp as scripts_bp
 
         from routes.game import  game_bp
         from middleware.auth import auth_bp
@@ -65,6 +66,7 @@ def create_app(test_config=None):
         app.register_blueprint(auth_bp)
         app.register_blueprint(auth_signup_bp)
         app.register_blueprint(user_dashboard, url_prefix='/user_dashboard')
+        app.register_blueprint(scripts_bp)
 
     print(app.url_map)
     return app 
