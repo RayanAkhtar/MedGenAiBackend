@@ -8,7 +8,7 @@ from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition
 
 
 # Load environment variables
-load_dotenv()
+load_dotenv("../.env")
 BASE_URL = os.getenv("BASE_URL")
 CSV_FILE_PATH = "../MedGenAI-Images/Images/test_cfs.csv"
 BATCH_SIZE = 500  # Inserting this many images at a time
