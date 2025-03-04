@@ -35,6 +35,7 @@ def batch_insert(records):
 def process_csv():
     try:
         print("attempt reading csv path")
+        print("df", df)
         df = pd.read_csv(CSV_FILE_PATH)
         df["id"] = df["id"] + 1  # Increment ID since csv starts from 0, but images start from 1
         image_records = []
