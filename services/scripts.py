@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 from dotenv import load_dotenv
 from __init__ import db
-from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags, CompetitionUser, Game
+from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags, CompetitionUser, Game, UserGameSession
 
 
 load_dotenv("../.env")
@@ -106,6 +106,18 @@ def populate_tables():
         
         db.session.commit()
         print("Games successfully inserted.")
+
+        sessions = [
+            UserGameSession(session_id=1, game_id=1, user_id=1, start_time=datetime(2024, 2, 1), end_time=datetime(2024, 2, 5)),
+            UserGameSession(session_id=2, game_id=1, user_id=2, start_time=datetime(2024, 2, 2), end_time=datetime(2024, 2, 6)),
+            UserGameSession(session_id=3, game_id=2, user_id=3, start_time=datetime(2024, 3, 1), end_time=datetime(2024, 3, 5)),
+            UserGameSession(session_id=4, game_id=3, user_id=1, start_time=datetime(2024, 4, 1), end_time=datetime(2024, 4, 5)),
+            UserGameSession(session_id=5, game_id=4, user_id=2, start_time=datetime(2024, 5, 1), end_time=datetime(2024, 5, 5)),
+        ]
+        
+        db.session.add_all(sessions)
+        db.session.commit()
+        print("User game sessions successfully inserted.")
 
         competitions = [
             Competition(competition_id=1, competition_name="MedGen Challenge", start_date="2025-01-01", end_date="2025-12-31"),
