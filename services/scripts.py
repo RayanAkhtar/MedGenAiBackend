@@ -108,11 +108,16 @@ def populate_tables():
         print("Games successfully inserted.")
 
         sessions = [
-            UserGameSession(session_id=1, game_id=1, user_id=1, start_time=datetime(2024, 2, 1), end_time=datetime(2024, 2, 5)),
-            UserGameSession(session_id=2, game_id=1, user_id=2, start_time=datetime(2024, 2, 2), end_time=datetime(2024, 2, 6)),
-            UserGameSession(session_id=3, game_id=2, user_id=3, start_time=datetime(2024, 3, 1), end_time=datetime(2024, 3, 5)),
-            UserGameSession(session_id=4, game_id=3, user_id=1, start_time=datetime(2024, 4, 1), end_time=datetime(2024, 4, 5)),
-            UserGameSession(session_id=5, game_id=4, user_id=2, start_time=datetime(2024, 5, 1), end_time=datetime(2024, 5, 5)),
+            UserGameSession(session_id=1, game_id=1, user_id="1", start_time=datetime(2024, 2, 1), completion_time=datetime(2024, 2, 5),
+                            session_status="completed", final_score=120, correct_guesses=10, total_guesses=12, time_taken=240),
+            UserGameSession(session_id=2, game_id=1, user_id="2", start_time=datetime(2024, 2, 2), completion_time=datetime(2024, 2, 6),
+                            session_status="completed", final_score=150, correct_guesses=13, total_guesses=15, time_taken=300),
+            UserGameSession(session_id=3, game_id=2, user_id="3", start_time=datetime(2024, 3, 1), completion_time=datetime(2024, 3, 5),
+                            session_status="completed", final_score=140, correct_guesses=12, total_guesses=15, time_taken=270),
+            UserGameSession(session_id=4, game_id=3, user_id="1", start_time=datetime(2024, 4, 1), completion_time=datetime(2024, 4, 5),
+                            session_status="completed", final_score=110, correct_guesses=9, total_guesses=12, time_taken=240),
+            UserGameSession(session_id=5, game_id=4, user_id="2", start_time=datetime(2024, 5, 1), completion_time=datetime(2024, 5, 5),
+                            session_status="completed", final_score=130, correct_guesses=11, total_guesses=14, time_taken=260)
         ]
         
         db.session.add_all(sessions)
