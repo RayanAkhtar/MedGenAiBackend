@@ -162,14 +162,14 @@ def count_users_by_tags(tag_names, match_all=True):
 
         # Base query
         query = db.session.query(
-            func.count(func.distinct(Users.user_id))
+            Users.user_id
         ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)).group_by(Users.user_id)
 
         # Apply filter for tags
         if match_all:
             query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
 
-        count = query.scalar()
+        count = query.count()
         return count if count is not None else 0
     except Exception as e:
         return {"error": str(e)}
