@@ -11,6 +11,7 @@ from services.admin.admin import (
     get_feedback_resolution_status,
     get_random_unresolved_feedback,
     upload_image_service,
+    list_tags,
     filter_users_by_tags,
     count_users_by_tags,
     get_metadata_counts
@@ -75,10 +76,18 @@ def get_metadata_counts_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@bp.route('/admin/tags', methods=['GET'])
+def tags():
+	"""API to return list of all tags"""
+	try:
+		return jsonify(list_tags())
+	except Exception as e:
+		logging.error(f"Server error: {str(e)}")
+		return jsonify({"error": "An unexpected error occured"}), 500
 
 @bp.route('/admin/filter-users', methods=['GET'])
 def get_users_by_tags():
-    """API to return users filtered by tags."""
+    """API to return users filtered by tags"""
     try:
         tag_names = request.args.getlist('tags')
         match_all = request.args.get('all', 'false').lower() == 'true'
@@ -86,8 +95,6 @@ def get_users_by_tags():
         desc = request.args.get('desc', 'true').lower() == 'true'
         limit = request.args.get('limit', default=10, type=int)
         offset = request.args.get('offset', default=0, type=int)
-        if not tag_names:
-            return jsonify({"error": "No tags provided"}), 400
         return jsonify(filter_users_by_tags(tag_names, match_all, sort_by, desc, limit, offset))
     except Exception as e:
         logging.error(f"Server error: {str(e)}")
@@ -100,8 +107,6 @@ def count_users_by_tags_api():
     try:
         tag_names = request.args.getlist('tags')
         match_all = request.args.get('all', 'false').lower() == 'true'
-        if not tag_names:
-            return jsonify({"error": "No tags provided"}), 400
         return jsonify({"count": count_users_by_tags(tag_names, match_all)})
     except Exception as e:
         logging.error(f"Server error: {str(e)}")
