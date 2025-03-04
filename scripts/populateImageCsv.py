@@ -1,3 +1,7 @@
+
+# Do not run this, run setup.py if you can instead
+
+
 import os
 import requests
 from dotenv import load_dotenv

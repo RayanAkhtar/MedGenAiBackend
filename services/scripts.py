@@ -110,7 +110,7 @@ def generate_hundreds_of_user_guesses_with_feedback(num_guesses=500):
         )
         user_guesses.append(user_guess)
         
-        x, y = random.randint(0, 5), random.randint(0, 5)
+        x, y = random.randint(0, 500), random.randint(0, 500)
         msg = random.choice([
             'Great image quality', 'Blurry in some areas', 'Perfect edge detection',
             'Too dark in some areas', 'Background needs work', 'Noise in shadow areas'
@@ -207,7 +207,7 @@ def populate_tables():
         db.session.commit()
         print("Images successfully inserted.")
 
-        user_guesses, feedback_entries, feedback_users_entries = generate_hundreds_of_user_guesses_with_feedback(num_guesses=500)  # Generate 500 user guesses with feedback
+        user_guesses, feedback_entries, feedback_users_entries = generate_hundreds_of_user_guesses_with_feedback(num_guesses=300)  # Generate 500 user guesses with feedback
         db.session.add_all(user_guesses)
         db.session.add_all(feedback_entries)
         db.session.add_all(feedback_users_entries)
