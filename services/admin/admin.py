@@ -3,6 +3,7 @@ from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition
 from sqlalchemy import func, desc, text, case
 from datetime import datetime
 import os
+import logging
 from flask import jsonify, flash
 from werkzeug.utils import secure_filename
 from decimal import Decimal
@@ -119,7 +120,7 @@ def get_random_unresolved_feedback(image_id):
         db.session.rollback()
         return {"error": str(e)}
 
-def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True):
+def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True, limit=10, offset=0):
     try:
         tag_names = [t.lower() for t in tag_names]
         
@@ -136,8 +137,9 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True):
         # Apply filter for tags
         if match_all:
             query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
-        else:
-            query = query.distinct()
+
+        # Pagination
+        query = query.limit(limit).offset(offset)
 
         # Fetch results
         data = [{
@@ -148,9 +150,27 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True):
             "accuracy": round((correct_guesses / total_guesses * 100) if total_guesses else 0, 2),
             "engagement": total_guesses
         } for user, total_guesses, correct_guesses in query.all()]
-
         # Sorting
         return sorted(data, key=lambda x: x[sort_by], reverse=desc)
+    except Exception as e:
+        logging.error(f"Error in filter_users_by_tags: {str(e)}", exc_info=True)
+        raise
+        
+def count_users_by_tags(tag_names, match_all=True):
+    try:
+        tag_names = [t.lower() for t in tag_names]
+
+        # Base query
+        query = db.session.query(
+            func.count(func.distinct(Users.user_id))
+        ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)).group_by(Users.user_id)
+
+        # Apply filter for tags
+        if match_all:
+            query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
+
+        count = query.scalar()
+        return count if count is not None else 0
     except Exception as e:
         return {"error": str(e)}
 
