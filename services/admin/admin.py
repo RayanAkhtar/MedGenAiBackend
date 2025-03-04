@@ -123,7 +123,12 @@ def get_random_unresolved_feedback(image_id):
 def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True, limit=10, offset=0):
     try:
         tag_names = [t.lower() for t in tag_names]
-        
+        sort_column = getattr(Users, sort_by)
+        if desc:
+            sort_column = sort_column.desc()
+        else:
+            sort_column = sort_column.asc()
+            
         # Base query
         query = db.session.query(
             Users,
@@ -132,7 +137,8 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True, 
         ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)
             ).outerjoin(UserGuess, UserGuess.user_id == Users.user_id
             ).outerjoin(Images, Images.image_id == UserGuess.image_id
-            ).group_by(Users.user_id)
+            ).group_by(Users.user_id
+            ).order_by(sort_column)
 
         # Apply filter for tags
         if match_all:
@@ -142,7 +148,7 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True, 
         query = query.limit(limit).offset(offset)
 
         # Fetch results
-        data = [{
+        return [{
             "username": user.username,
             "level": user.level,
             "games_started": user.games_started,
@@ -150,12 +156,10 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True, 
             "accuracy": round((correct_guesses / total_guesses * 100) if total_guesses else 0, 2),
             "engagement": total_guesses
         } for user, total_guesses, correct_guesses in query.all()]
-        # Sorting
-        return sorted(data, key=lambda x: x[sort_by], reverse=desc)
     except Exception as e:
         logging.error(f"Error in filter_users_by_tags: {str(e)}", exc_info=True)
         raise
-        
+
 def count_users_by_tags(tag_names, match_all=True):
     try:
         tag_names = [t.lower() for t in tag_names]
