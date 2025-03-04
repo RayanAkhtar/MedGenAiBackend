@@ -138,26 +138,32 @@ def populate_tables():
         print("Competitions successfully inserted.")
 
         images = [
-            Images(image_id=111111, image_path='/test_images/fake_1.jpg', image_type='ai', upload_time='2023-03-17', gender='male', age=55, disease='none'),
-            Images(image_id=111112, image_path='/test_images/fake_2.jpg', image_type='real', upload_time='2023-03-17', gender=None, age=23, disease='none'),
-            Images(image_id=111113, image_path='/test_images/fake_3.jpg', image_type='ai', upload_time='2023-03-17', gender=None, age=34, disease='pleural effusion')
+            Images(image_id=111111, image_path='/test_images/fake_1.jpg', image_type='ai', 
+                   upload_time=datetime(2023, 3, 17), gender='male', age=55, disease='none'),
+            Images(image_id=111112, image_path='/test_images/fake_2.jpg', image_type='real', 
+                   upload_time=datetime(2023, 3, 17), gender=None, age=23, disease='none'),
+            Images(image_id=111113, image_path='/test_images/fake_3.jpg', image_type='ai', 
+                   upload_time=datetime(2023, 3, 17), gender=None, age=34, disease='pleural effusion')
         ]
         
         db.session.add_all(images)
+        print("Images successfully inserted.")
+
 
         user_guesses = [
-            UserGuess(guess_id=1, image_id=111111, user_id=1, user_guess_type='ai', date_of_guess='2024-02-01'),
-            UserGuess(guess_id=2, image_id=111111, user_id=2, user_guess_type='real', date_of_guess='2024-02-02'),
-            UserGuess(guess_id=3, image_id=111111, user_id=3, user_guess_type='ai', date_of_guess='2024-03-05'),
-            UserGuess(guess_id=4, image_id=111111, user_id=1, user_guess_type='real', date_of_guess='2024-04-12'),
-            UserGuess(guess_id=5, image_id=111111, user_id=2, user_guess_type='ai', date_of_guess='2024-04-20'),
-            UserGuess(guess_id=6, image_id=111112, user_id=1, user_guess_type='real', date_of_guess='2024-05-10'),
-            UserGuess(guess_id=7, image_id=111112, user_id=3, user_guess_type='ai', date_of_guess='2024-06-01'),
-            UserGuess(guess_id=8, image_id=111113, user_id=2, user_guess_type='real', date_of_guess='2024-07-15'),
-            UserGuess(guess_id=9, image_id=111113, user_id=1, user_guess_type='ai', date_of_guess='2024-08-23')
+            UserGuess(guess_id=1, session_id=1, image_id=111111, user_id=1, user_guess_type='ai', date_of_guess=datetime(2024, 2, 1)),
+            UserGuess(guess_id=2, session_id=1, image_id=111111, user_id=2, user_guess_type='real', date_of_guess=datetime(2024, 2, 2)),
+            UserGuess(guess_id=3, session_id=2, image_id=111111, user_id=3, user_guess_type='ai', date_of_guess=datetime(2024, 3, 5)),
+            UserGuess(guess_id=4, session_id=2, image_id=111111, user_id=1, user_guess_type='real', date_of_guess=datetime(2024, 4, 12)),
+            UserGuess(guess_id=5, session_id=3, image_id=111111, user_id=2, user_guess_type='ai', date_of_guess=datetime(2024, 4, 20)),
+            UserGuess(guess_id=6, session_id=3, image_id=111112, user_id=1, user_guess_type='real', date_of_guess=datetime(2024, 5, 10)),
+            UserGuess(guess_id=7, session_id=4, image_id=111112, user_id=3, user_guess_type='ai', date_of_guess=datetime(2024, 6, 1)),
+            UserGuess(guess_id=8, session_id=4, image_id=111113, user_id=2, user_guess_type='real', date_of_guess=datetime(2024, 7, 15)),
+            UserGuess(guess_id=9, session_id=5, image_id=111113, user_id=1, user_guess_type='ai', date_of_guess=datetime(2024, 8, 23))
         ]
         
         db.session.add_all(user_guesses)
+        print("UserGuess successfully inserted.")
 
         feedback = [
             Feedback(feedback_id=1, x=0, y=1, msg='Great image quality', resolved=False, date_added='2023-04-21', confidence=5),
@@ -169,6 +175,7 @@ def populate_tables():
         ]
         
         db.session.add_all(feedback)
+        print("Feedback successfully inserted.")
 
         feedback_users = [
             FeedbackUser(guess_id=1, feedback_id=1),
@@ -178,6 +185,7 @@ def populate_tables():
         ]
         
         db.session.add_all(feedback_users)
+        print("FeedbackUsers successfully inserted.")
 
         competition_users = [
             CompetitionUser(competition_id=1, user_id=1, score=100),
@@ -186,6 +194,7 @@ def populate_tables():
         ]
         
         db.session.add_all(competition_users)
+        print("Competition Users successfully inserted.")
 
         db.session.commit()
 
