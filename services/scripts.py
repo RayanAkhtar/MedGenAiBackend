@@ -203,3 +203,7 @@ def populate_tables():
     except Exception as e:
         print(f"An error occurred while populating tables: {str(e)}")
         raise e
+
+
+
+
