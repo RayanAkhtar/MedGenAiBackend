@@ -78,12 +78,28 @@ def setup_tables():
 def populate_tables():
     """Populate tables using SQLAlchemy insert."""
     try:
+        users = [
+            Users(user_id=1, username="test_user1", level=1, exp=100, games_started=5, games_won=3, score=120),
+            Users(user_id=2, username="test_user2", level=2, exp=150, games_started=7, games_won=5, score=180),
+            Users(user_id=3, username="test_user3", level=3, exp=200, games_started=8, games_won=4, score=220)
+        ]
+        
+        db.session.add_all(users)
+        
+        db.session.commit()
+        print("Users successfully inserted.")
+
         games = [
-            Game(game_id=1, competition_id=1, game_name="Game 1"),
-            Game(game_id=2, competition_id=2, game_name="Game 2"),
-            Game(game_id=3, competition_id=3, game_name="Game 3"),
-            Game(game_id=4, competition_id=4, game_name="Game 4"),
-            Game(game_id=5, competition_id=5, game_name="Game 5")
+            Game(game_id=1, game_mode="Classic", date_created=datetime(2025, 1, 1), game_board="Standard", 
+                 game_status="Active", expiry_date=datetime(2025, 12, 31), created_by=1),
+            Game(game_id=2, game_mode="AI", date_created=datetime(2025, 6, 15), game_board="Advanced", 
+                 game_status="Active", expiry_date=datetime(2025, 9, 1), created_by=2),
+            Game(game_id=3, game_mode="Tournament", date_created=datetime(2024, 3, 1), game_board="Elite", 
+                 game_status="Inactive", expiry_date=datetime(2024, 6, 30), created_by=3),
+            Game(game_id=4, game_mode="Classic", date_created=datetime(2023, 11, 1), game_board="Standard", 
+                 game_status="Active", expiry_date=datetime(2024, 1, 15), created_by=1),
+            Game(game_id=5, game_mode="AI", date_created=datetime(2024, 5, 10), game_board="Advanced", 
+                 game_status="Inactive", expiry_date=datetime(2024, 12, 20), created_by=2)
         ]
         
         db.session.add_all(games)
@@ -103,14 +119,6 @@ def populate_tables():
         
         db.session.commit()
         print("Competitions successfully inserted.")
-
-        users = [
-            Users(user_id=1, username="test_user1", level=1, exp=100, games_started=5, games_won=3, score=120),
-            Users(user_id=2, username="test_user2", level=2, exp=150, games_started=7, games_won=5, score=180),
-            Users(user_id=3, username="test_user3", level=3, exp=200, games_started=8, games_won=4, score=220)
-        ]
-        
-        db.session.add_all(users)
 
         images = [
             Images(image_id=111111, image_path='/test_images/fake_1.jpg', image_type='ai', upload_time='2023-03-17', gender='male', age=55, disease='none'),
