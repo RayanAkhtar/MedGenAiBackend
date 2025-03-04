@@ -91,7 +91,7 @@ def get_users_by_tags():
     try:
         tag_names = request.args.getlist('tags')
         match_all = request.args.get('all', 'false').lower() == 'true'
-        sort_by = request.args.get('sort_by', 'level').lower()
+        sort_by = request.args.get('sort_by', 'username').lower()
         desc = request.args.get('desc', 'true').lower() == 'true'
         limit = request.args.get('limit', default=10, type=int)
         offset = request.args.get('offset', default=0, type=int)

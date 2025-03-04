@@ -127,11 +127,10 @@ def list_tags():
         logging.error(f"Error fetching tags: {str(e)}", exc_info=True)
         raise
 
-def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True, limit=10, offset=0):
+def filter_users_by_tags(tag_names, match_all=True, sort_by="username", desc=True, limit=10, offset=0):
     try:
         query = None
-        sort_column = getattr(Users, sort_by)
-        sort_column = sort_column.desc() if desc else sort_column.asc()
+        sort_column = getattr(Users, sort_by) if sort_by in ["username", "level", "score", "games_started"] else None
         
         if not tag_names or len(tag_names) == 0:
             # Return all users
@@ -141,8 +140,7 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True, 
                 func.count(func.distinct(UserGuess.guess_id)).filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
             ).outerjoin(UserGuess, UserGuess.user_id == Users.user_id
             ).outerjoin(Images, Images.image_id == UserGuess.image_id
-            ).group_by(Users.user_id
-            ).order_by(sort_column)
+            ).group_by(Users.user_id)
         else:
             tag_names = [t.lower() for t in tag_names]    
             # Base query
@@ -153,18 +151,21 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True, 
             ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)
             ).outerjoin(UserGuess, UserGuess.user_id == Users.user_id
             ).outerjoin(Images, Images.image_id == UserGuess.image_id
-            ).group_by(Users.user_id
-            ).order_by(sort_column)
+            ).group_by(Users.user_id)
 
             # Apply filter for tags
             if match_all:
                 query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
 
+        # Sorting
+        if sort_column:
+            query = query.order_by(sort_column.desc() if desc else sort_column)
+        
         # Pagination
         query = query.limit(limit).offset(offset)
 
         # Fetch results
-        return [{
+        data = [{
             "username": user.username,
             "level": user.level,
             "games_started": user.games_started,
@@ -172,6 +173,11 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True, 
             "accuracy": round((correct_guesses / total_guesses * 100) if total_guesses else 0, 2),
             "engagement": total_guesses
         } for user, total_guesses, correct_guesses in query.all()]
+
+        if sort_by in ["accuracy", "engagement"]:
+            data = sorted(data, key=lambda x: x[sort_by], reverse=desc)
+        return data
+        
     except Exception as e:
         logging.error(f"Error in filter_users_by_tags: {str(e)}", exc_info=True)
         raise
