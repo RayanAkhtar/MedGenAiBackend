@@ -4,7 +4,7 @@ from sqlalchemy import func, case, desc, asc
 from sqlalchemy.orm import aliased
 
 
-def get_feedback_with_filters(image_type=None, resolved=None, sex=None, disease=None, age_range=None, sort_by=None, sort_order='asc', limit=20, offset=0):
+def get_feedback_with_filters(image_type=None, resolved=None, sex=None, disease=None, age_range=None, sort_by=None, sort_order='asc', limit=21, offset=0):
     try:
         # Alias for Feedback table to avoid duplication due to joins
         feedback_alias = aliased(Feedback)
@@ -101,7 +101,7 @@ def get_feedback_with_filters(image_type=None, resolved=None, sex=None, disease=
                 'age': row.age,
                 'disease': row.disease,
             }
-            for row in results
+            for row in results[:-1]
         ]
 
         return feedback_data

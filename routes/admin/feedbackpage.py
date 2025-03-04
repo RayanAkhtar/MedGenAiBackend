@@ -21,7 +21,7 @@ def get_feedbacks_route():
     resolved = True if resolved == 'true' else (False if resolved == 'false' else None)
 
     page = request.args.get('page', 1, type=int)
-    limit = request.args.get('limit', 20, type=int)
+    limit = request.args.get('limit', 21, type=int)
 
     feedback_data = get_feedback_with_filters(
         image_type=image_type, 
