@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 from dotenv import load_dotenv
 from __init__ import db
-from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags, CompetitionUser
+from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags, CompetitionUser, Game
 
 
 load_dotenv("../.env")
@@ -78,6 +78,19 @@ def setup_tables():
 def populate_tables():
     """Populate tables using SQLAlchemy insert."""
     try:
+        games = [
+            Game(game_id=1, competition_id=1, game_name="Game 1"),
+            Game(game_id=2, competition_id=2, game_name="Game 2"),
+            Game(game_id=3, competition_id=3, game_name="Game 3"),
+            Game(game_id=4, competition_id=4, game_name="Game 4"),
+            Game(game_id=5, competition_id=5, game_name="Game 5")
+        ]
+        
+        db.session.add_all(games)
+        
+        db.session.commit()
+        print("Games successfully inserted.")
+
         competitions = [
             Competition(competition_id=1, competition_name="MedGen Challenge", start_date="2025-01-01", end_date="2025-12-31"),
             Competition(competition_id=2, competition_name="AI Championship", start_date="2025-06-15", end_date="2025-09-01"),
@@ -88,6 +101,9 @@ def populate_tables():
         
         db.session.add_all(competitions)
         
+        db.session.commit()
+        print("Competitions successfully inserted.")
+
         users = [
             Users(user_id=1, username="test_user1", level=1, exp=100, games_started=5, games_won=3, score=120),
             Users(user_id=2, username="test_user2", level=2, exp=150, games_started=7, games_won=5, score=180),
@@ -147,7 +163,9 @@ def populate_tables():
         db.session.add_all(competition_users)
 
         db.session.commit()
+
         print("Tables populated with initial data.")
+        
     except Exception as e:
         print(f"An error occurred while populating tables: {str(e)}")
         raise e
