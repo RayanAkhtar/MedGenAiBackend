@@ -187,17 +187,17 @@ def populate_tables():
         db.session.commit()
         print("User game sessions successfully inserted.")
 
-        competitions = [
-            Competition(competition_id=1, competition_name="MedGen Challenge", start_date=datetime(2025, 1, 1).date(), end_date=datetime(2025, 12, 31).date()),
-            Competition(competition_id=2, competition_name="AI Championship", start_date=datetime(2025, 6, 15).date(), end_date=datetime(2025, 9, 1).date()),
-            Competition(competition_id=3, competition_name="Data Science Battle", start_date=datetime(2024, 3, 1).date(), end_date=datetime(2024, 6, 30).date()),
-            Competition(competition_id=4, competition_name="Health Hackathon", start_date=datetime(2023, 11, 1).date(), end_date=datetime(2024, 1, 15).date()),
-            Competition(competition_id=5, competition_name="Open Innovation Fest", start_date=datetime(2024, 5, 10).date(), end_date=datetime(2024, 12, 20).date())
-        ]
+        # competitions = [
+        #     Competition(competition_id=1, competition_name="MedGen Challenge", start_date=datetime(2025, 1, 1).date(), end_date=datetime(2025, 12, 31).date()),
+        #     Competition(competition_id=2, competition_name="AI Championship", start_date=datetime(2025, 6, 15).date(), end_date=datetime(2025, 9, 1).date()),
+        #     Competition(competition_id=3, competition_name="Data Science Battle", start_date=datetime(2024, 3, 1).date(), end_date=datetime(2024, 6, 30).date()),
+        #     Competition(competition_id=4, competition_name="Health Hackathon", start_date=datetime(2023, 11, 1).date(), end_date=datetime(2024, 1, 15).date()),
+        #     Competition(competition_id=5, competition_name="Open Innovation Fest", start_date=datetime(2024, 5, 10).date(), end_date=datetime(2024, 12, 20).date())
+        # ]
         
-        db.session.add_all(competitions)
-        db.session.commit()
-        print("Competitions successfully inserted.")
+        # db.session.add_all(competitions)
+        # db.session.commit()
+        # print("Competitions successfully inserted.")
 
         images = [
             Images(image_id=111111, image_path='/test_images/fake_1.jpg', image_type='ai', 
@@ -219,15 +219,15 @@ def populate_tables():
         db.session.commit()
         print(f"{len(user_guesses)} UserGuesses and {len(feedback_entries)} Feedbacks successfully inserted.")
 
-        competition_users = [
-            CompetitionUser(competition_id=1, user_id=1, score=100),
-            CompetitionUser(competition_id=1, user_id=2, score=150),
-            CompetitionUser(competition_id=2, user_id=3, score=120)
-        ]
+        # competition_users = [
+        #     CompetitionUser(competition_id=1, user_id=1, score=100),
+        #     CompetitionUser(competition_id=1, user_id=2, score=150),
+        #     CompetitionUser(competition_id=2, user_id=3, score=120)
+        # ]
         
-        db.session.add_all(competition_users)
-        db.session.commit()
-        print("Competition Users successfully inserted.")
+        # db.session.add_all(competition_users)
+        # db.session.commit()
+        # print("Competition Users successfully inserted.")
 
         print("Tables populated with initial data.")
         
