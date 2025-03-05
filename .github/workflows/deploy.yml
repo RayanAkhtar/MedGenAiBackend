@@ -46,11 +46,13 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
             cd MedGenAiBackend
             git fetch origin ${{ env.BRANCH_NAME }}
             git checkout ${{ env.BRANCH_NAME }}
             git pull origin ${{ env.BRANCH_NAME }}
             cd
+            docker image ls -a | grep "backend-main" | awk '{print $3}' | xargs -r docker rmi -f || true
             docker build -t ${{ env.CONTAINER_NAME }} -f MedGenAiBackend/Dockerfile .
             cd MedGenAiBackend
             docker rm -f ${{ env.CONTAINER_NAME }} || true
