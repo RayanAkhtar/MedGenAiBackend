@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from services.admin.tags import get_tags, add_tag, update_tag, delete_tag
+from services.admin.managetags import get_tags, add_tag, update_tag, delete_tag
 
 bp = Blueprint('adminTags', __name__)
 
