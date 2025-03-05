@@ -3,7 +3,6 @@ from services.admin.tags import get_tags, add_tag, update_tag, delete_tag
 
 bp = Blueprint('adminTags', __name__)
 
-# Get all tags
 @bp.route('/admin/getTags', methods=['GET'])
 def get_tags_route():
     try:
@@ -12,17 +11,20 @@ def get_tags_route():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Add a new tag
 @bp.route('/admin/addTag', methods=['POST'])
 def add_tag_route():
     try:
         data = request.get_json()
-        new_tag = add_tag(data.get('name'), data.get('isPrivate'))
+        name = data.get('name')
+        admin_id = data.get('admin_id')
+
+        new_tag = add_tag(name, admin_id)
+        
         return jsonify(new_tag), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Update a tag
+
 @bp.route('/admin/updateTag/<tag_id>', methods=['POST'])
 def update_tag_route(tag_id):
     try:
@@ -32,7 +34,6 @@ def update_tag_route(tag_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Delete a tag
 @bp.route('/admin/deleteTag/<tag_id>', methods=['DELETE'])
 def delete_tag_route(tag_id):
     try:
