@@ -146,17 +146,24 @@ def populate_tables():
         db.session.commit()
         print("Users successfully inserted.")
 
+        tags = ["Lung Legend", "Neuro Ninja", "X-Ray Visionary", "AI Antagonist", "Diagnosis Master", "AI Skeptic"]
+        tag_entries = [Tag(name=tag, admin_id=None) for tag in tags]
+        
+        db.session.add_all(tag_entries)
+        db.session.commit()
+        print("Tags successfully inserted.")
+
         games = [
             Game(game_id=1, game_mode="Classic", date_created=datetime(2025, 1, 1), game_board="Standard", 
-                 game_status="Active", expiry_date=datetime(2025, 12, 31), created_by=1),
+                 game_status="Active", expiry_date=datetime(2025, 12, 31).date(), created_by=1),
             Game(game_id=2, game_mode="AI", date_created=datetime(2025, 6, 15), game_board="Advanced", 
-                 game_status="Active", expiry_date=datetime(2025, 9, 1), created_by=2),
+                 game_status="Active", expiry_date=datetime(2025, 9, 1).date(), created_by=2),
             Game(game_id=3, game_mode="Tournament", date_created=datetime(2024, 3, 1), game_board="Elite", 
-                 game_status="Inactive", expiry_date=datetime(2024, 6, 30), created_by=3),
+                 game_status="Inactive", expiry_date=datetime(2024, 6, 30).date(), created_by=3),
             Game(game_id=4, game_mode="Classic", date_created=datetime(2023, 11, 1), game_board="Standard", 
-                 game_status="Active", expiry_date=datetime(2024, 1, 15), created_by=1),
+                 game_status="Active", expiry_date=datetime(2024, 1, 15).date(), created_by=1),
             Game(game_id=5, game_mode="AI", date_created=datetime(2024, 5, 10), game_board="Advanced", 
-                 game_status="Inactive", expiry_date=datetime(2024, 12, 20), created_by=2)
+                 game_status="Inactive", expiry_date=datetime(2024, 12, 20).date(), created_by=2)
         ]
         
         db.session.add_all(games)
@@ -181,11 +188,11 @@ def populate_tables():
         print("User game sessions successfully inserted.")
 
         competitions = [
-            Competition(competition_id=1, competition_name="MedGen Challenge", start_date="2025-01-01", end_date="2025-12-31"),
-            Competition(competition_id=2, competition_name="AI Championship", start_date="2025-06-15", end_date="2025-09-01"),
-            Competition(competition_id=3, competition_name="Data Science Battle", start_date="2024-03-01", end_date="2024-06-30"),
-            Competition(competition_id=4, competition_name="Health Hackathon", start_date="2023-11-01", end_date="2024-01-15"),
-            Competition(competition_id=5, competition_name="Open Innovation Fest", start_date="2024-05-10", end_date="2024-12-20")
+            Competition(competition_id=1, competition_name="MedGen Challenge", start_date=datetime(2025, 1, 1).date(), end_date=datetime(2025, 12, 31).date()),
+            Competition(competition_id=2, competition_name="AI Championship", start_date=datetime(2025, 6, 15).date(), end_date=datetime(2025, 9, 1).date()),
+            Competition(competition_id=3, competition_name="Data Science Battle", start_date=datetime(2024, 3, 1).date(), end_date=datetime(2024, 6, 30).date()),
+            Competition(competition_id=4, competition_name="Health Hackathon", start_date=datetime(2023, 11, 1).date(), end_date=datetime(2024, 1, 15).date()),
+            Competition(competition_id=5, competition_name="Open Innovation Fest", start_date=datetime(2024, 5, 10).date(), end_date=datetime(2024, 12, 20).date())
         ]
         
         db.session.add_all(competitions)
