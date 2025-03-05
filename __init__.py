@@ -66,7 +66,7 @@ def create_app(test_config=None):
         app.register_blueprint(auth_bp)
         app.register_blueprint(auth_signup_bp)
         app.register_blueprint(user_dashboard, url_prefix='/user_dashboard')
-        app.register_blueprint(scripts_bp)
+        #app.register_blueprint(scripts_bp)
 
     print(app.url_map)
     return app 

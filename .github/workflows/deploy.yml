@@ -46,8 +46,6 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            set -e
-            set -o pipefail
             cd MedGenAiBackend
             git fetch origin ${{ env.BRANCH_NAME }}
             git checkout ${{ env.BRANCH_NAME }}
@@ -57,20 +55,9 @@ jobs:
             docker build -t ${{ env.CONTAINER_NAME }} -f MedGenAiBackend/Dockerfile .
             cd MedGenAiBackend
             docker rm -f ${{ env.CONTAINER_NAME }} || true
-            if ! docker run -d --name ${{ env.CONTAINER_NAME }} \
+            docker run -d --name ${{ env.CONTAINER_NAME }} \
               -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
               --env-file=.env \
               -e PORT=${{ env.APP_PORT }} \
               -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json \
-              ${{ env.CONTAINER_NAME }}; then
-                echo "Docker run failed! Exiting..."
-                exit 1
-            fi
-
-            if ! docker ps | grep ${{ env.CONTAINER_NAME }}; then
-              echo "Container failed to start! Exiting..."
-              exit 1
-            fi
-
-            echo "Deployment succeeded!"
-          script_stop: true
+              ${{ env.CONTAINER_NAME }}
