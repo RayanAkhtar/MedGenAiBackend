@@ -114,23 +114,63 @@ def get_users_ordered():
     
 def get_user_data_by_username(username):
     try:
-        query = text("SELECT * FROM users WHERE username = CAST(:username AS VARCHAR);")
-        result = db.session.execute(query, {'username': str(username)})  # Ensure user_id is string
+        query = text("""
+            SELECT
+                u.user_id,u.username,u.level,u.exp,u.games_started,u.games_won,u.score,
+
+                COALESCE(g.total_images_guessed, 0) AS total_images_guessed,
+                COALESCE(g.correct_guesses, 0) AS correct_guesses,
+                COALESCE(g.accuracy_percentage, 0) AS accuracy_percentage
+
+            FROM users u
+            LEFT JOIN (
+                SELECT
+                    ug.user_id,
+                    COUNT(*) AS total_images_guessed,
+                    SUM(
+                        CASE WHEN ug.user_guess_type = i.image_type
+                             THEN 1 ELSE 0 END
+                    ) AS correct_guesses,
+
+                    -- Calculate accuracy percentage
+                    CASE
+                        WHEN COUNT(*) = 0 THEN 0
+                        ELSE (
+                            SUM(
+                                CASE WHEN ug.user_guess_type = i.image_type
+                                     THEN 1 ELSE 0 END
+                            ) * 100.0
+                            / COUNT(*)
+                        )
+                    END AS accuracy_percentage
+
+                FROM user_guesses ug
+                JOIN images i ON ug.image_id = i.image_id
+                GROUP BY ug.user_id
+            ) AS g ON g.user_id = u.user_id
+
+            WHERE u.username = CAST(:username AS VARCHAR)
+        """)
+
+        result = db.session.execute(query, {'username': str(username)})
         row = result.fetchone()
 
         if not row:
-            return {"error": "User not found"}, 404  # Return a dict instead of jsonify()
+            return {"error": "User not found"}, 404
 
-        return dict(zip(result.keys(), row)), 200  # Return dictionary instead of jsonify()
+        # Convert the row to a dictionary
+        user_data = dict(zip(result.keys(), row))
+
+        return user_data, 200
 
     except Exception as e:
-        return {"error": f"Database error: {str(e)}"}, 500  # Return dictionary
-    
+        return {"error": f"Database error: {str(e)}"}, 500
 
 def get_game_by_game_id(game_id):
     try:
         # Fetch the game from the database
         game = db.session.query(Game).filter_by(game_id=game_id).first()
+        created_by = db.session.query(Users).filter_by(user_id=game.created_by).first()
 
         # If game not found, return an error message
         if not game:
@@ -144,7 +184,7 @@ def get_game_by_game_id(game_id):
             "game_board": game.game_board,
             "game_status": game.game_status,
             "expiry_date": game.expiry_date,
-            "created_by": game.created_by,
+            "created_by": created_by.username,
        }
 
         return game_data, 200
@@ -153,21 +193,30 @@ def get_game_by_game_id(game_id):
     
 
 def create_user_game_session(game_id, user_id):
-    """Creates a new UserGameSession and commits it to the database."""
-    from sqlalchemy.exc import SQLAlchemyError
-    try:
-        new_session = UserGameSession(
-            game_id=game_id,
-            user_id=user_id,
-            start_time=datetime.now(),
-            session_status="active"  # Default status
-        )
+	"""Creates a new UserGameSession and commits it to the database."""
+	return create_multiple_game_sessions(game_id, [user_id])
+    
+def create_multiple_game_sessions(game_id, user_ids):
+	"""Creates multiple UserGameSession objects for a given game_id and list of user_ids."""
+	from sqlalchemy.exc import SQLAlchemyError
+	try:
+		# Create a list of UserGameSession objects
+		new_sessions = []
+		for user_id in user_ids:
+			new_session = UserGameSession(
+				game_id=game_id,
+				user_id=user_id,
+				start_time=datetime.now(),
+				session_status="active"  # Default status
+			)
+			new_sessions.append(new_session)
 
-        db.session.add(new_session)
-        db.session.commit()
-        return new_session, 200  # Return the created session object
+		# Add all sessions to the session and commit
+		db.session.add_all(new_sessions)
+		db.session.commit()
+		return new_sessions, 200  # Return the created sessions
 
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        print(f"Error creating user game session: {e}")
-        return {'error': str(e)}, 404  # Return None if an error occurs
+	except SQLAlchemyError as e:
+		db.session.rollback()
+		print(f"Error creating user game sessions: {e}")
+		return {'error': str(e)}, 404  # Return None if an error occurs
