@@ -166,42 +166,46 @@ def get_user_data_by_username(username):
     except Exception as e:
         return {"error": f"Database error: {str(e)}"}, 500
 
-def get_game_by_game_id(game_id):
-    try:
-        # Fetch the game from the database
-        game = db.session.query(Game).filter_by(game_id=game_id).first()
-        created_by = db.session.query(Users).filter_by(user_id=game.created_by).first()
+def get_game_by_game_code(game_code):
+	try:
+		game_code_entry = db.session.query(GameCode).filter_by(game_code=game_code).first()
+		if not game_code_entry:
+			return {"error": "Invalid game code"}, 404
+		game_id = game_code_entry.game_id        # Fetch the game from the database
+		game = db.session.query(Game).filter_by(game_id=game_id).first()
+		created_by = db.session.query(Users).filter_by(user_id=game.created_by).first()
 
-        # If game not found, return an error message
-        if not game:
-            return {"error": "Game not found"}
+		if not game:
+			return {"error": "Game not found"}
 
-        # Construct the response
-        game_data = {
-            "game_id": game.game_id,
-            "game_mode": game.game_mode,
-            "date_created": game.date_created,
-            "game_board": game.game_board,
-            "game_status": game.game_status,
-            "expiry_date": game.expiry_date,
-            "created_by": created_by.username,
-       }
+		game_data = {
+			"game_code": game_code,
+			"game_mode": game.game_mode,
+			"date_created": game.date_created,
+			"game_board": game.game_board,
+			"game_status": game.game_status,
+			"expiry_date": game.expiry_date,
+			"created_by": created_by.username,
+		}
 
-        return game_data, 200
-    except Exception as e:
-        return {"error": str(e)}, 404
+		return game_data, 200
+	except Exception as e:
+		return {"error": str(e)}, 404
     
 
-def create_user_game_session(game_id, user_id):
+def create_user_game_session(game_code, user_id):
 	"""Creates a new UserGameSession and commits it to the database."""
-	return create_multiple_game_sessions(game_id, [user_id])
+	return create_multiple_game_sessions(game_code, [user_id])
     
-def create_multiple_game_sessions(game_id, user_ids):
+def create_multiple_game_sessions(game_code, user_ids):
 	"""Creates multiple UserGameSession objects for a given game_id and list of user_ids."""
 	from sqlalchemy.exc import SQLAlchemyError
 	try:
-		# Create a list of UserGameSession objects
 		new_sessions = []
+		game_code_entry = db.session.query(GameCode).filter_by(game_code=game_code).first()
+		if not game_code_entry:
+			return {"error": "Invalid game code"}, 404
+		game_id = game_code_entry.game_id
 		for user_id in user_ids:
 			new_session = UserGameSession(
 				game_id=game_id,
