@@ -1,5 +1,6 @@
 import os
 from flask import request, jsonify, send_file, url_for
+from sqlalchemy import or_
 from models import Images
 from sqlalchemy.sql.expression import func
 
@@ -22,10 +23,12 @@ def generate_image(age: str = "", gender: str = "", disease: str = ""):
         age_range = map_age_range(age)
         if age_range:
             query = query.filter(Images.age.between(*age_range))
-    if gender and gender != "any":
-        query = query.filter(Images.gender == gender)
-    if disease and disease != "any":
-        query = query.filter(Images.disease == disease)
+    
+    gender_condition = (Images.gender == gender) if gender and gender != "any" else None
+    disease_condition = (Images.disease == disease) if disease and disease != "any" else None
+
+    if gender_condition or disease_condition:
+        query = query.filter(or_(gender_condition, disease_condition))
 
     image = query.order_by(func.random()).first()
 
