@@ -49,7 +49,7 @@ def process_csv():
                     processed_path = "/".join(row[col].split("/")[-2:])
                     gender = "Male" if "Male" in col else "Female" if "Female" in col else None
                     disease = col.replace("path_cf_", "") if "path_cf_" in col else "none"
-                    if disease == "Null":
+                    if disease in ["Null", "Male", "Female"]:
                         disease = None
                     if disease == "No_disease":
                         disease = "none" # Specifically registered as being ai with no disease
