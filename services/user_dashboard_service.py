@@ -7,44 +7,67 @@ from __init__ import db
 class UserDashboardService:
     def get_user_stats(self, user_id):
         """Get user statistics for the dashboard"""
-        # Get user from database
-        user = Users.query.filter_by(user_id=user_id).first()
-        if not user:
-            raise ValueError("User not found")
+        try:
+            # Get user from database
+            user = Users.query.filter_by(user_id=user_id).first()
+            if not user:
+                print(f"User not found: {user_id}")
+                raise ValueError(f"User with ID {user_id} not found")
             
-        # Calculate average accuracy from completed game sessions
-        completed_sessions = UserGameSession.query.filter_by(
-            user_id=user_id,
-            session_status="completed"
-        ).all()
-        
-        total_correct = 0
-        total_guesses = 0
-        
-        for session in completed_sessions:
-            total_correct += session.correct_guesses or 0
-            total_guesses += session.total_guesses or 0
-        
-        if total_guesses > 0:
-            average_accuracy = round((total_correct / total_guesses) * 100)
-        else:
+            # Calculate average accuracy from completed game sessions
+            completed_sessions = UserGameSession.query.filter_by(
+                user_id=user_id,
+                session_status="completed"
+            ).all()
+            
+            print(f"Found {len(completed_sessions)} completed sessions for user {user_id}")
+            
+            total_correct = 0
+            total_guesses = 0
+            
+            for session in completed_sessions:
+                # Add defensive checks for None values
+                session_correct = session.correct_guesses or 0
+                session_total = session.total_guesses or 0
+                
+                print(f"Session {session.session_id}: correct={session_correct}, total={session_total}")
+                
+                total_correct += session_correct
+                total_guesses += session_total
+            
+            # Default accuracy to 0 if no guesses
             average_accuracy = 0
+            if total_guesses > 0:
+                average_accuracy = round((total_correct / total_guesses) * 100)
             
-        # Count completed challenges/games
-        challenges_completed = UserGameSession.query.filter_by(
-            user_id=user_id,
-            session_status="completed"
-        ).count()
-        
-        # Calculate user rank based on score
-        user_rank_query = Users.query.filter(Users.score > user.score).count()
-        current_rank = user_rank_query + 1  # Add 1 because ranks start at 1
-        
-        return {
-            "averageAccuracy": average_accuracy,
-            "challengesCompleted": challenges_completed,
-            "currentRank": current_rank
-        }
+            print(f"Calculated accuracy: {average_accuracy}% ({total_correct}/{total_guesses})")
+            
+            # Count completed challenges/games
+            challenges_completed = len(completed_sessions)
+            
+            # Calculate user rank based on score
+            user_rank_query = Users.query.filter(Users.score > user.score).count()
+            current_rank = user_rank_query + 1  # Add 1 because ranks start at 1
+            
+            print(f"User rank: {current_rank}")
+            
+            # Return stats with default values for safety
+            return {
+                "averageAccuracy": average_accuracy,
+                "challengesCompleted": challenges_completed,
+                "currentRank": current_rank,
+                "totalScore": user.score or 0
+            }
+        except Exception as e:
+            print(f"Error in get_user_stats: {str(e)}")
+            # Return default values in case of error
+            return {
+                "averageAccuracy": 0,
+                "challengesCompleted": 0,
+                "currentRank": 0,
+                "totalScore": 0,
+                "error": str(e)
+            }
     
     def get_recent_activity(self, user_id):
         """Get user's recent game activity"""

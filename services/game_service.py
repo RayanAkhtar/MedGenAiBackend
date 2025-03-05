@@ -369,24 +369,32 @@ class GameService:
             dict: Game data including images and sessions
         """
         try:
+            print(f"Getting game with ID {game_id} for user {user_id}")
+            
             # Get the game
             game = Game.query.filter_by(game_id=game_id).first()
+            print(f"Found game: {game}")
             if not game:
                 raise ValueError(f"Game with ID {game_id} not found")
             
             # Get all game images
             game_images = []
+            print(f"Getting images for game {game_id}")
             for game_image in game.game_images:
                 image = game_image.image
+                print(f"Processing image {image.image_id}: {image.image_path}")
                 game_images.append({
                     'url': f"/api/images/view/{image.image_path}",
                     'type': image.image_type
                 })
+            print(f"Found {len(game_images)} images")
             
             # Get all sessions for this game
             sessions = []
+            print(f"Getting sessions for game {game_id}")
             for session in UserGameSession.query.filter_by(game_id=game_id).all():
                 user = Users.query.filter_by(user_id=session.user_id).first()
+                print(f"Processing session {session.session_id} for user {user.username if user else 'Unknown'}")
                 
                 session_data = {
                     'session_id': session.session_id,
@@ -399,16 +407,17 @@ class GameService:
                 }
                 
                 sessions.append(session_data)
+            print(f"Found {len(sessions)} sessions")
             
             # Build response
             response = {
                 'game_id': game.game_id,
                 'images': game_images,
             }
+            print(f"Returning response for game {game_id}")
         
             return response
             
         except Exception as e:
             print(f"Error in get_game: {str(e)}")
             raise
-        
