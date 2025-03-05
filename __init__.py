@@ -36,7 +36,7 @@ def create_app(test_config=None):
     with app.app_context():
         # Register blueprints
         from routes import bp
-        from routes.profile import bp as profile_bp
+        from routes.profile import profile_bp
         from routes.images import bp as image_bp
 
         from routes.admin.admin import bp as admin_bp
@@ -52,7 +52,7 @@ def create_app(test_config=None):
         from routes.auth import auth_signup_bp
         from routes.user_dashboard import user_dashboard
         app.register_blueprint(bp)
-        app.register_blueprint(profile_bp)
+        app.register_blueprint(profile_bp, url_prefix='/profile')
 
         app.register_blueprint(admin_bp)
         app.register_blueprint(admin_download_bp)
@@ -66,7 +66,7 @@ def create_app(test_config=None):
         app.register_blueprint(auth_bp)
         app.register_blueprint(auth_signup_bp)
         app.register_blueprint(user_dashboard, url_prefix='/user_dashboard')
-        app.register_blueprint(scripts_bp)
+        # app.register_blueprint(scripts_bp)
 
     print(app.url_map)
     return app 

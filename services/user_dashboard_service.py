@@ -114,15 +114,14 @@ class UserDashboardService:
     
     def get_leaderboard(self):
         """Get global leaderboard data"""
-        # Get top 10 users by score
-        top_users = Users.query.order_by(Users.score.desc()).limit(10).all()
-        
+        # Get all users and calculate their accuracy
+        users = Users.query.all()
         players = []
         
-        for rank, user in enumerate(top_users, 1):
+        for user in users:
             # Calculate user's accuracy based on game sessions
             user_sessions = UserGameSession.query.filter_by(
-                user_id=user.user_id, 
+                user_id=user.user_id,
                 session_status="completed"
             )
             total_sessions = user_sessions.count()
@@ -155,10 +154,17 @@ class UserDashboardService:
                 display_name = display_name[:17] + "..."
                 
             players.append({
-                "rank": rank,
                 "name": display_name,
                 "accuracy": accuracy
             })
+        
+        # Sort by accuracy descending and take top 10
+        players.sort(key=lambda x: x["accuracy"], reverse=True)
+        players = players[:10]
+        
+        # Add ranks after sorting
+        for i, player in enumerate(players, 1):
+            player["rank"] = i
             
         return {
             "players": players
