@@ -18,15 +18,6 @@ def batch_insert(records):
     """Insert records in batches using SQLAlchemy."""
     total_records = len(records)
 
-    print(records[0])
-    print(records[0][0])
-    print(records[0][1])
-    print(records[0][2])
-    print(records[0][3])
-    print(records[0][4])
-    print(records[0][5])
-    print(records[0][6])
-
     for i in range(0, total_records, BATCH_SIZE):
         batch = records[i:i + BATCH_SIZE]
         for record in batch:
@@ -46,18 +37,14 @@ def process_csv():
     try:
         print("attempt reading csv path")
         df = pd.read_csv(CSV_FILE_PATH)
-        print("df", df)
         df["id"] = df["id"] + 1  # Increment ID since csv starts from 0, but images start from 1
         image_records = []
-        print("df is", df)
         
         for _, row in df.iterrows():
-            print("a")
             real_image_path = f"real_images/{row['id']}.jpg"
-            image_records.append((row["id"], real_image_path, "real", datetime.now(), None, None, None, None))
+            image_records.append((row["id"], real_image_path, "real", datetime.now(), None, None, None))
             
             for col in COLUMNS_TO_PROCESS:
-                print("b")
                 if pd.notna(row[col]):
                     processed_path = "/".join(row[col].split("/")[-2:])
                     gender = "Male" if "Male" in col else "Female" if "Female" in col else None
@@ -65,8 +52,7 @@ def process_csv():
                     if disease in ["Male", "Female", "Null"]:
                         disease = None
                     
-                    image_records.append((row["id"], processed_path, "ai", datetime.now(), gender, None, row["age"], disease))
-        print("c")
+                    image_records.append((row["id"], processed_path, "ai", datetime.now(), gender, row["age"], disease))
         batch_insert(image_records)
     except Exception as e:
         print(f"Error processing CSV: {e}")
