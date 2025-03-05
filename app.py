@@ -1,4 +1,5 @@
 import os
+import logging
 from __init__ import create_app
 from routes.competition import competition_bp
 
