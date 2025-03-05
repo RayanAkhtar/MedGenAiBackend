@@ -176,6 +176,17 @@ class UserTags(db.Model):
     __tablename__ = 'user_tags'
 
     user_id = db.Column(db.String(128), db.ForeignKey('users.user_id'), primary_key=True)
+    tag_id = db.Column(db.Integer, db.ForeignKey('tag.tag_id'), primary_key=True)
+
+class CompetitionGame(db.Model):
+    __tablename__ = 'competition_games'
+
+    id = db.Column(db.Integer, primary_key=True)
+    competition_id = db.Column(db.Integer, db.ForeignKey('competitions.competition_id'), nullable=False)
+    game_id = db.Column(db.Integer, db.ForeignKey('games.game_id'), nullable=False)
+
+    competition = db.relationship('Competition', backref=db.backref('competition_games', lazy=True))
+    game = db.relationship('Game', backref=db.backref('competition_games', lazy=True)) 
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.tag_id'), primary_key=True) 
 
 @event.listens_for(Competition, 'before_insert')

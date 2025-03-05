@@ -105,4 +105,22 @@ def finish_classic_game():
             'error': str(e),
             'status': 'error'
         }), 500
-        
+    
+@game_bp.route('/get-game/<game_id>', methods=['GET'])
+@require_auth
+def get_game(game_id):
+    """
+    Get a game for the user
+    """
+    try:
+        user_id = request.user_id
+        game = game_service.get_game(game_id, user_id)
+
+        return jsonify(game)
+    except Exception as e:
+        print(f"Error in get_game: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+
