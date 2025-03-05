@@ -45,7 +45,7 @@ def create_app(test_config=None):
         from routes.admin.metrics import bp as admin_metrics_bp
         from routes.admin.heatmapfeedback import bp as admin_heatmap_bp
         from routes.admin.generateaiimage import bp as generate_image_bp
-        from routes.scripts import bp as scripts_bp
+        #from routes.scripts import bp as scripts_bp
 
         from routes.game import  game_bp
         from middleware.auth import auth_bp
