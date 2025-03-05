@@ -154,15 +154,15 @@ def populate_tables():
         print("Tags successfully inserted.")
 
         games = [
-            Game(game_id=1, game_mode="Classic", date_created=datetime(2025, 1, 1), game_board="Standard", 
+            Game(game_id=1, game_mode="Classic", date_created=datetime(2025, 1, 1).date(), game_board="Standard", 
                  game_status="Active", expiry_date=datetime(2025, 12, 31).date(), created_by=1),
-            Game(game_id=2, game_mode="AI", date_created=datetime(2025, 6, 15), game_board="Advanced", 
+            Game(game_id=2, game_mode="AI", date_created=datetime(2025, 6, 15).date(), game_board="Advanced", 
                  game_status="Active", expiry_date=datetime(2025, 9, 1).date(), created_by=2),
-            Game(game_id=3, game_mode="Tournament", date_created=datetime(2024, 3, 1), game_board="Elite", 
+            Game(game_id=3, game_mode="Tournament", date_created=datetime(2024, 3, 1).date(), game_board="Elite", 
                  game_status="Inactive", expiry_date=datetime(2024, 6, 30).date(), created_by=3),
-            Game(game_id=4, game_mode="Classic", date_created=datetime(2023, 11, 1), game_board="Standard", 
+            Game(game_id=4, game_mode="Classic", date_created=datetime(2023, 11, 1).date(), game_board="Standard", 
                  game_status="Active", expiry_date=datetime(2024, 1, 15).date(), created_by=1),
-            Game(game_id=5, game_mode="AI", date_created=datetime(2024, 5, 10), game_board="Advanced", 
+            Game(game_id=5, game_mode="AI", date_created=datetime(2024, 5, 10).date(), game_board="Advanced", 
                  game_status="Inactive", expiry_date=datetime(2024, 12, 20).date(), created_by=2)
         ]
         
