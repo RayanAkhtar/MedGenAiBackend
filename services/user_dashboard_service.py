@@ -3,7 +3,7 @@ from sqlalchemy import func, desc
 from datetime import datetime, timedelta
 from flask import current_app
 import math
-
+from __init__ import db
 class UserDashboardService:
     def get_user_stats(self, user_id):
         """Get user statistics for the dashboard"""
@@ -12,13 +12,21 @@ class UserDashboardService:
         if not user:
             raise ValueError("User not found")
             
-        # Calculate average accuracy
-        accuracy_query = UserGuess.query.filter_by(user_id=user_id)
-        total_guesses = accuracy_query.count()
+        # Calculate average accuracy from completed game sessions
+        completed_sessions = UserGameSession.query.filter_by(
+            user_id=user_id,
+            session_status="completed"
+        ).all()
+        
+        total_correct = 0
+        total_guesses = 0
+        
+        for session in completed_sessions:
+            total_correct += session.correct_guesses or 0
+            total_guesses += session.total_guesses or 0
         
         if total_guesses > 0:
-            correct_guesses = accuracy_query.filter_by(is_correct=True).count()
-            average_accuracy = round((correct_guesses / total_guesses) * 100)
+            average_accuracy = round((total_correct / total_guesses) * 100)
         else:
             average_accuracy = 0
             
@@ -89,13 +97,30 @@ class UserDashboardService:
         players = []
         
         for rank, user in enumerate(top_users, 1):
-            # Calculate user's accuracy
-            user_guesses = UserGuess.query.filter_by(user_id=user.user_id)
-            total_guesses = user_guesses.count()
+            # Calculate user's accuracy based on game sessions
+            user_sessions = UserGameSession.query.filter_by(
+                user_id=user.user_id, 
+                session_status="completed"
+            )
+            total_sessions = user_sessions.count()
             
-            if total_guesses > 0:
-                correct_guesses = user_guesses.filter_by(is_correct=True).count()
-                accuracy = round((correct_guesses / total_guesses) * 100)
+            if total_sessions > 0:
+                # Get sum of correct guesses and total guesses from all sessions
+                session_stats = db.session.query(
+                    func.sum(UserGameSession.correct_guesses).label("total_correct"),
+                    func.sum(UserGameSession.total_guesses).label("total_guesses")
+                ).filter(
+                    UserGameSession.user_id == user.user_id,
+                    UserGameSession.session_status == "completed"
+                ).first()
+                
+                total_correct = session_stats.total_correct or 0
+                total_guesses = session_stats.total_guesses or 0
+                
+                if total_guesses > 0:
+                    accuracy = round((total_correct / total_guesses) * 100)
+                else:
+                    accuracy = 0
             else:
                 accuracy = 0
                 
