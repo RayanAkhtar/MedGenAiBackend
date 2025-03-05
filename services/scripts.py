@@ -49,8 +49,10 @@ def process_csv():
                     processed_path = "/".join(row[col].split("/")[-2:])
                     gender = "Male" if "Male" in col else "Female" if "Female" in col else None
                     disease = col.replace("path_cf_", "") if "path_cf_" in col else "none"
-                    if disease in ["Male", "Female", "Null"]:
+                    if disease == "Null":
                         disease = None
+                    if disease == "No_disease":
+                        disease = "none" # Specifically registered as being ai with no disease
                     
                     image_records.append((row["id"], processed_path, "ai", datetime.now(), gender, row["age"], disease))
         batch_insert(image_records)
