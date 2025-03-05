@@ -3,6 +3,7 @@ from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition
 from sqlalchemy import func, desc, text, case
 from datetime import datetime
 import os
+import logging
 from flask import jsonify, flash
 from werkzeug.utils import secure_filename
 from decimal import Decimal
@@ -119,25 +120,49 @@ def get_random_unresolved_feedback(image_id):
         db.session.rollback()
         return {"error": str(e)}
 
-def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True):
+def list_tags():
     try:
-        tag_names = [t.lower() for t in tag_names]
+        return [tag[0] for tag in db.session.query(Tag.name).all()]
+    except Exception as e:
+        logging.error(f"Error fetching tags: {str(e)}", exc_info=True)
+        raise
+
+def filter_users_by_tags(tag_names, match_all=True, sort_by="username", desc=True, limit=10, offset=0):
+    try:
+        query = None
+        sort_column = getattr(Users, sort_by) if sort_by in ["username", "level", "score", "games_started"] else None
         
-        # Base query
-        query = db.session.query(
-            Users,
-            func.count(func.distinct(UserGuess.guess_id)).label("total_guesses"),
-            func.count(func.distinct(UserGuess.guess_id)).filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
-        ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)
+        if not tag_names or len(tag_names) == 0:
+            # Return all users
+            query = db.session.query(
+                Users,
+                func.count(func.distinct(UserGuess.guess_id)).label("total_guesses"),
+                func.count(func.distinct(UserGuess.guess_id)).filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
+            ).outerjoin(UserGuess, UserGuess.user_id == Users.user_id
+            ).outerjoin(Images, Images.image_id == UserGuess.image_id
+            ).group_by(Users.user_id)
+        else:
+            tag_names = [t.lower() for t in tag_names]    
+            # Base query
+            query = db.session.query(
+                Users,
+                func.count(func.distinct(UserGuess.guess_id)).label("total_guesses"),
+                func.count(func.distinct(UserGuess.guess_id)).filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
+            ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)
             ).outerjoin(UserGuess, UserGuess.user_id == Users.user_id
             ).outerjoin(Images, Images.image_id == UserGuess.image_id
             ).group_by(Users.user_id)
 
-        # Apply filter for tags
-        if match_all:
-            query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
-        else:
-            query = query.distinct()
+            # Apply filter for tags
+            if match_all:
+                query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
+
+        # Sorting
+        if sort_column:
+            query = query.order_by(sort_column.desc() if desc else sort_column)
+        
+        # Pagination
+        query = query.limit(limit).offset(offset)
 
         # Fetch results
         data = [{
@@ -149,8 +174,33 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="level", desc=True):
             "engagement": total_guesses
         } for user, total_guesses, correct_guesses in query.all()]
 
-        # Sorting
-        return sorted(data, key=lambda x: x[sort_by], reverse=desc)
+        if sort_by in ["accuracy", "engagement"]:
+            data = sorted(data, key=lambda x: x[sort_by], reverse=desc)
+        return data
+        
+    except Exception as e:
+        logging.error(f"Error in filter_users_by_tags: {str(e)}", exc_info=True)
+        raise
+
+def count_users_by_tags(tag_names, match_all=True):
+    try:
+        query = None
+        if not tag_names or len(tag_names) == 0:
+            query = db.session.query(Users.user_id)
+        else:
+            tag_names = [t.lower() for t in tag_names]
+
+            # Base query
+            query = db.session.query(
+                Users.user_id
+            ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)).group_by(Users.user_id)
+
+            # Apply filter for tags
+            if match_all:
+                query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
+
+        count = query.count()
+        return count if count is not None else 0
     except Exception as e:
         return {"error": str(e)}
 

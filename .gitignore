@@ -181,3 +181,6 @@ migrations/
 
 *.pem
 *.sql
+
+#Log files
+*.log
