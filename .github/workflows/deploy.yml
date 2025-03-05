@@ -6,11 +6,6 @@ on:
       - main
       - admin
       # Add more branches as needed
-  pull_request:
-    branches:
-      - main
-      - admin
-      # Add more branches as needed
 
 concurrency:
   group: deploy-backend-${{ github.ref_name }}
