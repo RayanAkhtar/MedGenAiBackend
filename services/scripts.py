@@ -48,7 +48,7 @@ def process_csv():
                 if pd.notna(row[col]):
                     processed_path = "/".join(row[col].split("/")[-2:])
                     gender = "Male" if "Male" in col else "Female" if "Female" in col else None
-                    disease = col.replace("path_cf_", "") if "path_cf_" in col else None
+                    disease = col.replace("path_cf_", "") if "path_cf_" in col else "none"
                     if disease in ["Male", "Female", "Null"]:
                         disease = None
                     
