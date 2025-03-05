@@ -172,7 +172,7 @@ cython_debug/
 
 #Script
 testscript.py
-
+scripts/
 medgenaifirebase.json
 
 #SQL stuff
