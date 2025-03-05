@@ -16,48 +16,55 @@ COLUMNS_TO_PROCESS = [
 
 def batch_insert(records):
     """Insert records in batches using SQLAlchemy."""
-    total_records = len(records)
-    for i in range(0, total_records, BATCH_SIZE):
-        batch = records[i:i + BATCH_SIZE]
-        for record in batch:
-            image = Images(
-                image_path=record[1],
-                image_type=record[2],
-                upload_time=record[3],
-                gender=record[4],
-                age=record[5],
-                disease=record[6]
-            )
-            db.session.add(image)
-        db.session.commit()
-        print(f"Successfully inserted {len(batch)} records.")
+    try:
+        total_records = len(records)
+        for i in range(0, total_records, BATCH_SIZE):
+            batch = records[i:i + BATCH_SIZE]
+            for record in batch:
+                image = Images(
+                    image_id=record[0],
+                    image_path=record[1],
+                    image_type=record[2],
+                    upload_time=record[3],
+                    gender=record[4],
+                    age=record[5],
+                    disease=record[6]
+                )
+                db.session.add(image)
+            db.session.commit()
+            print(f"Successfully inserted {len(batch)} records.")
+    except Exception as e:
+        print(f"Error during batch insert: {e}")
+        db.session.rollback()
 
 def process_csv():
     try:
-        print("attempt reading csv path")
+        print("Attempting to read CSV...")
         df = pd.read_csv(CSV_FILE_PATH)
-        print("df", df)
-        df["id"] = df["id"] + 1  # Increment ID since csv starts from 0, but images start from 1
+        print("DataFrame loaded:", df.head())
+
+        df["id"] = df["id"] + 1  # Increment ID to match image numbering
         image_records = []
-        print("df is", df)
-        
+
         for _, row in df.iterrows():
-            print("a")
             real_image_path = f"real_images/{row['id']}.jpg"
-            image_records.append((row["id"], real_image_path, "real", datetime.now(), None, None, None, None))
-            
+            image_records.append((row["id"], real_image_path, "real", datetime.now(), None, row["age"], None))
+
             for col in COLUMNS_TO_PROCESS:
-                print("b")
-                if pd.notna(row[col]):
+                if pd.notna(row[col]):  # Ensure valid paths
                     processed_path = "/".join(row[col].split("/")[-2:])
                     gender = "Male" if "Male" in col else "Female" if "Female" in col else None
                     disease = col.replace("path_cf_", "") if "path_cf_" in col else None
-                    if disease in ["Male", "Female", "Null"]:
+                    
+                    # Exclude certain unwanted values
+                    if disease in ["Male", "Female", "Null", "No_disease"]:
                         disease = None
                     
-                    image_records.append((row["id"], processed_path, "ai", datetime.now(), gender, None, row["age"], disease))
-        print("c")
+                    image_records.append((row["id"], processed_path, "ai", datetime.now(), gender, row["age"], disease))
+        
+        print("Inserting batch records...")
         batch_insert(image_records)
+    
     except Exception as e:
         print(f"Error processing CSV: {e}")
 
@@ -73,9 +80,6 @@ def setup_tables():
     try:
         db.create_all()
         print("Tables created successfully.")
-        
-        process_csv()
-
     except Exception as e:
         print(f"An error occurred while setting up tables: {str(e)}")
         raise e
