@@ -132,6 +132,28 @@ def delete_tag_for_user(user_id, tag_id):
         print(f"Error deleting tag for user: {e}")
         return {"error": "Failed to delete tag for user"}
 
+def get_tags_for_user(username):
+    try:
+        user = db.session.query(Users).filter(Users.username == username).first()
+        
+        if not user:
+            return {"error": "User not found"}
+        
+        user_tags = db.session.query(UserTags.tag_id).filter(UserTags.user_id == user.user_id).all()
 
+        if not user_tags:
+            return {"message": "No tags found for this user"}
+        
+        tags = db.session.query(Tag.tag_id, Tag.name).filter(Tag.tag_id.in_([tag_id for (tag_id,) in user_tags])).all()
+
+        return [
+            {"tag_id": tag.tag_id, "name": tag.name}
+            for tag in tags
+        ]
+    
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print(f"Error fetching tags for user: {e}")
+        return {"error": str(e)}
 
 

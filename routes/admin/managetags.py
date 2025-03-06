@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from services.admin.managetags import get_tags, add_tag, update_tag, delete_tag, add_tag_for_user, delete_tag_for_user
+from services.admin.managetags import get_tags, add_tag, update_tag, delete_tag, add_tag_for_user, delete_tag_for_user, get_tags_for_user
 
 bp = Blueprint('adminTags', __name__)
 
@@ -71,3 +71,12 @@ def delete_tag_for_user_route():
         return jsonify({'message': 'Tag deleted successfully for user'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/admin/getTagsForUser/<username>', methods=['GET'])
+def get_tags_for_user_route(username):
+    try:
+        tags = get_tags_for_user(username)
+        return jsonify(tags), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
