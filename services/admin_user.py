@@ -1,6 +1,7 @@
 from __init__ import db
 from models import *
-from sqlalchemy import text, bindparam, func
+from sqlalchemy import text, bindparam, func, and_
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from datetime import datetime 
 import os
 from flask import jsonify, flash
@@ -210,8 +211,18 @@ def create_multiple_game_sessions(game_code, usernames):
         users = db.session.query(Users).filter(Users.username.in_(usernames)).all()
         if not users or len(users) != len(usernames):
             return {"error": "One or more usernames are invalid"}, 404
-        user_ids = [user.user_id for user in users]
-        for user_id in user_ids:
+
+        user_ids = {user.user_id for user in users}
+        existing_sessions = db.session.query(UserGameSession.user_id).filter(
+            and_(
+                UserGameSession.game_id == game_id,
+                UserGameSession.user_id.in_(user_ids)
+            )
+        ).all()
+        assigned_user_ids = {session.user_id for session in existing_sessions}
+        new_user_ids = user_ids - assigned_user_ids
+
+        for user_id in new_user_ids:
             new_session = UserGameSession(
                 game_id=game_id,
                 user_id=user_id,
@@ -220,11 +231,15 @@ def create_multiple_game_sessions(game_code, usernames):
             )
             new_sessions.append(new_session)
 
-        # Add all sessions to the session and commit
-        db.session.add_all(new_sessions)
-        db.session.commit()
+        if new_sessions:
+             # Add all sessions to the session and commit
+            db.session.add_all(new_sessions)
+            db.session.commit()
         return new_sessions, 200  # Return the created sessions
 
+    except IntegrityError:
+        db.session.rollback()
+        return {'error': 'Database integrity error'}, 409
     except SQLAlchemyError as e:
         db.session.rollback()
         print(f"Error creating user game sessions: {e}")
