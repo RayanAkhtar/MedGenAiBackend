@@ -16,8 +16,13 @@ from services.admin.admin import (
     count_users_by_tags,
     get_metadata_counts
 )
-from services.admin_user import create_multiple_game_sessions, create_user_game_session, get_game_by_game_code, get_user_data_by_username, get_users_with_filters
-
+from services.admin_user import (
+    create_multiple_game_sessions, 
+    create_user_game_session,
+    get_game_by_game_code,
+    get_user_data_by_username,
+    get_users_with_filters
+)
 from sqlalchemy import func, extract
 from models import UserGuess
 from services.admin_user import create_user_game_session, get_game_by_game_code, get_user_data_by_username, get_users_with_filters
@@ -217,20 +222,21 @@ def create_new_user_game_session():
         return jsonify({'status': code}), 200
     else:
         return jsonify(res), code
+
 @bp.route('/admin/newGameSession/multi', methods=['POST'])
 def create_new_user_game_session_multi():
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Missing JSON body'}), 400
     game_code = data.get('game_code')
-    user_ids = data.get('user_ids')
-    if game_code is None or user_ids is None:
-        return jsonify({'error': 'Missing "game_id" or "user_ids"'}), 400
-    res, code = create_multiple_game_sessions(game_code, user_ids)
+    usernames = data.get('usernames')
+    if game_code is None:
+        return jsonify({'error': 'Missing "game_id"'}), 400
+    if usernames is None:
+        return jsonify({'error': 'Missing "usernames"'}), 400
+    res, code = create_multiple_game_sessions(game_code, usernames)
 
     if code == 200:
         return jsonify({'status': code}), 200
     else:
         return jsonify(res), code
-    
-

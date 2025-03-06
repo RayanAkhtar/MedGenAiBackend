@@ -124,7 +124,9 @@ class UserGameSession(db.Model):
     user = db.relationship('Users',
                          backref=db.backref('game_sessions', lazy=True),
                          foreign_keys=[user_id])
-
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'game_id', name='unique_user_game'),
+    )
 
 class UserGuess(db.Model):
     __tablename__ = 'user_guesses'
