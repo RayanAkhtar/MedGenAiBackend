@@ -47,6 +47,7 @@ def create_app(test_config=None):
         from routes.admin.generateaiimage import bp as generate_image_bp
         from routes.scripts import bp as scripts_bp # comment later
         from routes.admin.managetags import bp as manage_tags_bp
+        from routes.admin.users import bp as admin_users_bp
 
         from routes.game import  game_bp
         from middleware.auth import auth_bp
@@ -62,6 +63,7 @@ def create_app(test_config=None):
         app.register_blueprint(admin_heatmap_bp)
         app.register_blueprint(generate_image_bp)
         app.register_blueprint(manage_tags_bp)
+        app.register_blueprint(admin_users_bp)
 
         app.register_blueprint(image_bp)
         app.register_blueprint(game_bp, url_prefix='/game')
