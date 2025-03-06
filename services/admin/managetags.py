@@ -142,8 +142,8 @@ def get_tags_for_user(username):
         user_tags = db.session.query(UserTags.tag_id).filter(UserTags.user_id == user.user_id).all()
 
         if not user_tags:
-            return {"message": "No tags found for this user"}
-        
+            return []
+
         tags = db.session.query(Tag.tag_id, Tag.name).filter(Tag.tag_id.in_([tag_id for (tag_id,) in user_tags])).all()
 
         return [
@@ -155,5 +155,6 @@ def get_tags_for_user(username):
         db.session.rollback()
         print(f"Error fetching tags for user: {e}")
         return {"error": str(e)}
+
 
 
