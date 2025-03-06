@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from services.admin.managetags import get_tags, add_tag, update_tag, delete_tag
+from services.admin.managetags import get_tags, add_tag, update_tag, delete_tag, add_tag_for_user, delete_tag_for_user
 
 bp = Blueprint('adminTags', __name__)
 
@@ -39,5 +39,35 @@ def delete_tag_route(tag_id):
     try:
         delete_tag(tag_id)
         return jsonify({'message': 'Tag deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/admin/addTagForUser', methods=['POST'])
+def add_tag_for_user_route():
+    try:
+        data = request.get_json()
+        user_id = data.get('userId')
+        tag_id = data.get('tagId')
+
+        if not user_id or not tag_id:
+            return jsonify({'error': 'Missing userId or tagId'}), 400
+
+        add_tag_for_user(user_id, tag_id)
+        return jsonify({'message': 'Tag added successfully for user'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/admin/deleteTagForUser', methods=['DELETE'])
+def delete_tag_for_user_route():
+    try:
+        data = request.get_json()
+        user_id = data.get('userId')
+        tag_id = data.get('tagId')
+
+        if not user_id or not tag_id:
+            return jsonify({'error': 'Missing userId or tagId'}), 400
+
+        delete_tag_for_user(user_id, tag_id)
+        return jsonify({'message': 'Tag deleted successfully for user'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

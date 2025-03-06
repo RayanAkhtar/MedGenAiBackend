@@ -1,5 +1,5 @@
 from __init__ import db
-from models import Tag, UserTags
+from models import Tag, UserTags, Users
 from sqlalchemy.exc import SQLAlchemyError
 
 def get_tags():
@@ -81,3 +81,57 @@ def delete_tag(tag_id):
         db.session.rollback()
         print(f"Error deleting tag: {e}")
         return {"error": str(e)}
+
+def add_tag_for_user(user_id, tag_id):
+    try:
+        tag = db.session.query(Tag).filter(Tag.tag_id == tag_id).first()
+        user = db.session.query(Users).filter(Users.user_id == user_id).first()
+
+        if not tag:
+            return {"error": "Tag not found"}
+        if not user:
+            return {"error": "User not found"}
+
+        existing_user_tag = db.session.query(UserTags).filter_by(user_id=user_id, tag_id=tag_id).first()
+
+        if existing_user_tag:
+            return {"message": "Tag already assigned to this user"}
+
+        new_user_tag = UserTags(user_id=user_id, tag_id=tag_id)
+        db.session.add(new_user_tag)
+        db.session.commit()
+
+        return {"message": "Tag added successfully to user", "user_id": user_id, "tag_id": tag_id}
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print(f"Error adding tag for user: {e}")
+        return {"error": "Failed to add tag for user"}
+
+def delete_tag_for_user(user_id, tag_id):
+    try:
+        tag = db.session.query(Tag).filter(Tag.tag_id == tag_id).first()
+        if not tag:
+            return {"error": "Tag not found"}
+
+        user = db.session.query(Users).filter(Users.user_id == user_id).first()
+        if not user:
+            return {"error": "User not found"}
+
+        user_tag = db.session.query(UserTags).filter_by(user_id=user_id, tag_id=tag_id).first()
+        if not user_tag:
+            return {"error": "Tag is not associated with this user"}
+
+        db.session.delete(user_tag)
+        db.session.commit()
+
+        return {"message": "Tag removed successfully from user", "user_id": user_id, "tag_id": tag_id}
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print(f"Error deleting tag for user: {e}")
+        return {"error": "Failed to delete tag for user"}
+
+
+
+
