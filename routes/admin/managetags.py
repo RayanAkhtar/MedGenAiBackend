@@ -72,10 +72,10 @@ def delete_tag_for_user_route():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/admin/getTagsForUser/<username>', methods=['GET'])
-def get_tags_for_user_route(username):
+@bp.route('/admin/getTagsForUser/<user_id>', methods=['GET'])
+def get_tags_for_user_route(user_id):
     try:
-        tags = get_tags_for_user(username)
+        tags = get_tags_for_user(user_id)
         return jsonify(tags), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
