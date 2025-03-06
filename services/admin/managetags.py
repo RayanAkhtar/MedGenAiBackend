@@ -84,29 +84,16 @@ def delete_tag(tag_id):
 
 def add_tag_for_user(user_id, tag_id):
     try:
-        tag = db.session.query(Tag).filter(Tag.tag_id == tag_id).first()
-        user = db.session.query(Users).filter(Users.user_id == user_id).first()
-
-        if not tag:
-            return {"error": "Tag not found"}
-        if not user:
-            return {"error": "User not found"}
-
-        existing_user_tag = db.session.query(UserTags).filter_by(user_id=user_id, tag_id=tag_id).first()
-
-        if existing_user_tag:
-            return {"message": "Tag already assigned to this user"}
-
-        new_user_tag = UserTags(user_id=user_id, tag_id=tag_id)
-        db.session.add(new_user_tag)
+        user_tag = UserTags(user_id=user_id, tag_id=tag_id)
+        db.session.add(user_tag)
         db.session.commit()
 
-        return {"message": "Tag added successfully to user", "user_id": user_id, "tag_id": tag_id}
+        return {"message": "Tag added successfully"}
 
     except SQLAlchemyError as e:
         db.session.rollback()
         print(f"Error adding tag for user: {e}")
-        return {"error": "Failed to add tag for user"}
+        return {"error": str(e)}
 
 def delete_tag_for_user(user_id, tag_id):
     try:
