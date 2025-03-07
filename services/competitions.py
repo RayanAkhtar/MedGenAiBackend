@@ -35,7 +35,7 @@ def create_competition(name, expiry, game_code):
 
         db.session.add(new_competition)
         db.session.commit()
-        return jsonify({'message': 'Competition created successfully', 'competition_id': new_competition.id}), 201
+        return jsonify({'message': 'Competition created successfully', 'competition_id': new_competition.competition_id}), 201
     except Exception as e:
         logger.error(f"Error creating competition: {e}")
         db.session.rollback()
