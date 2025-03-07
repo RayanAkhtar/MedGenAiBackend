@@ -175,7 +175,10 @@ class Tag(db.Model):
     tag_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     admin_id = db.Column(db.Integer, nullable=True)
-
+    __table_args__ = (
+        db.UniqueConstraint('name', 'admin_id', name='uq_name_admin_id'),
+        db.Index('uq_name_without_admin', 'name', unique=True, postgresql_where=(db.text('admin_id IS NULL')))
+    )
 
 class UserTags(db.Model):
     __tablename__ = 'user_tags'
