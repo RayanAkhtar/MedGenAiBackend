@@ -3,12 +3,17 @@ from models import *
 from sqlalchemy import text, bindparam, func
 from datetime import datetime 
 from flask import jsonify
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
 # Admin only
 def create_competition(name, expiry, game_code):
     """
     Create a new game first then gets the game id from it.
     Creates a new competition using that same id.
     """
+    logger.info(f"Creating competition : {name}")
     try:
         
         
