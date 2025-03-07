@@ -14,6 +14,7 @@ def create_competition(name, expiry, game_code):
     Creates a new competition using that same id.
     """
     logger.info(f"Creating competition : {name}")
+    logger.info(f"Expiry date : {expiry}")
     try:
         
         
@@ -23,6 +24,7 @@ def create_competition(name, expiry, game_code):
             start_date=datetime.now(),
             end_date=expiry,
         )
+
         db.session.add(new_competition)
         db.session.commit()
         return jsonify({'message': 'Competition created successfully', 'competition_id': new_competition.id}), 201
