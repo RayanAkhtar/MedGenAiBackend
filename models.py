@@ -10,6 +10,7 @@ class Competition(db.Model):
     competition_name = db.Column(db.String(100), nullable=False)
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
+    
 
     game = db.relationship('Game', backref=db.backref('competition', uselist=False))
 
