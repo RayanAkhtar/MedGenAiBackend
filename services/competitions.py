@@ -21,7 +21,7 @@ def create_competition(name, expiry, game_code):
         return jsonify({'message': 'Game not found'}), 404
     comp = Competition.query.filter_by(competition_id=game_code).first()
 
-    if not comp:
+    if comp:
         return jsonify({'message': 'Competition already exists'}), 400
     try:
         
