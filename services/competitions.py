@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import jsonify
 
 # Admin only
-def create_competition(name, game_type, expiry, game_code):
+def create_competition(name, expiry, game_code):
     """
     Create a new game first then gets the game id from it.
     Creates a new competition using that same id.
@@ -16,7 +16,6 @@ def create_competition(name, game_type, expiry, game_code):
         new_competition = Competition(
             competition_id=game_code,
             competition_name=name,
-            competition_type=game_type,
             start_date=datetime.now(),
             end_date=expiry,
         )

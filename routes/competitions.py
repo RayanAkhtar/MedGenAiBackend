@@ -8,7 +8,7 @@ bp = Blueprint('competitions', __name__)
 def create():
   json_data = request.get_json()
   print(f"Creating competition : {json_data.name}")
-  return create_competition(json_data.name, json_data.game_type, json_data.expiry, json_data.game_code);
+  return create_competition(json_data.name, json_data.expiry, json_data.game_code)
 
 @bp.route('/api/competitions/all', methods=['GET'])
 def get_competition_all():
@@ -28,4 +28,4 @@ def get_specific():
 def submit():
   json_data = request.get_json()
   print(f"Submitting to competiton with ID: {json_data.competition_id}, for user: {json_data.user_id}")
-  return submit_competition_score(json_data.competition_id, json_data.user_id, json_data.score);
+  return submit_competition_score(json_data.competition_id, json_data.user_id, json_data.score)
