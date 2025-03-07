@@ -22,8 +22,8 @@ def get_competition_all():
 @bp.route('/api/competitions/specific', methods=['POST'])
 def get_specific():
   json_data = request.get_json()
-  print(f"Getting competiton with ID: {json_data.competition_id}")
-  return get_competition(json_data.competition_id);
+  print(f"Getting competiton with ID: {json_data.get('competition_id')}")
+  return get_competition(json_data.get('competition_id'));
 
 @bp.route('/api/competitions/submit', methods=['POST'])
 def submit():
