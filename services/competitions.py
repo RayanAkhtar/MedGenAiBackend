@@ -15,6 +15,14 @@ def create_competition(name, expiry, game_code):
     """
     logger.info(f"Creating competition : {name}")
     logger.info(f"Expiry date : {expiry}")
+
+    game = Game.query.filter_by(game_id=game_code).first()
+    if not game:
+        return jsonify({'message': 'Game not found'}), 404
+    comp = Competition.query.filter_by(competition_id=game_code).first()
+
+    if not comp:
+        return jsonify({'message': 'Competition already exists'}), 400
     try:
         
         
