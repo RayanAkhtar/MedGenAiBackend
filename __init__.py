@@ -46,7 +46,7 @@ def create_app(test_config=None):
         from routes.admin.metrics import bp as admin_metrics_bp
         from routes.admin.heatmapfeedback import bp as admin_heatmap_bp
         from routes.admin.generateaiimage import bp as generate_image_bp
-        # from routes.scripts import bp as scripts_bp # comment later
+        # from routes.scripts import bp as scripts_bp
         from routes.admin.managetags import bp as manage_tags_bp
         from routes.admin.users import bp as admin_users_bp
 

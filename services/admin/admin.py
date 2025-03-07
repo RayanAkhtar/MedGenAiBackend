@@ -122,7 +122,7 @@ def get_random_unresolved_feedback(image_id):
 
 def list_tags():
     try:
-        return [tag[0] for tag in db.session.query(Tag.name).all()]
+        return list({tag[0] for tag in db.session.query(Tag.name).all()})
     except Exception as e:
         logging.error(f"Error fetching tags: {str(e)}", exc_info=True)
         raise
