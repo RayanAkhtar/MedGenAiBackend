@@ -36,7 +36,6 @@ def get_all_competitions():
             {
                 'id': comp.competition_id,
                 'name': comp.competition_name,
-                'type': comp.competition_type,
                 'start_date': comp.start_date,
                 'end_date': comp.end_date
             } for comp in competitions
@@ -71,10 +70,8 @@ def get_competition(game_id):
         result = {
             'id': competition.competition_id,
             'name': competition.competition_name,
-            'type': competition.competition_type,
             'start_date': competition.start_date,
             'expiry': competition.end_date,
-            'top_player': top_player
         }
         return jsonify(result), 200
 
