@@ -94,3 +94,29 @@ def submit_competition_score(competition_id, user_id, score):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+def get_game_by_game_id(game_id):
+    try:
+        # Fetch the game from the database
+        game = db.session.query(Game).filter_by(game_id=game_id).first()
+        created_by = db.session.query(Users).filter_by(user_id=game.created_by).first()
+
+        # If game not found, return an error message
+        if not game:
+            return {"error": "Game not found"}
+
+        # Construct the response
+        game_data = {
+            "game_id": game.game_id,
+            "game_mode": game.game_mode,
+            "date_created": game.date_created,
+            "game_board": game.game_board,
+            "game_status": game.game_status,
+            "expiry_date": game.expiry_date,
+            "created_by": created_by.username,
+       }
+
+        return game_data, 200
+    except Exception as e:
+        return {"error": str(e)}, 404
+    
