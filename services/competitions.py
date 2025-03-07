@@ -3,7 +3,6 @@ from models import *
 from sqlalchemy import text, bindparam, func
 from datetime import datetime 
 from flask import jsonify
-
 # Admin only
 def create_competition(name, expiry, game_code):
     """
