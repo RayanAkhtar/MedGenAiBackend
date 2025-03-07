@@ -1,5 +1,7 @@
 from __init__ import db
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import event
+import sqlalchemy as sa
 
 class Competition(db.Model):
     __tablename__ = 'competitions'
@@ -9,6 +11,8 @@ class Competition(db.Model):
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
     
+
+    game = db.relationship('Game', backref=db.backref('competition', uselist=False))
 
 
 class CompetitionUser(db.Model):
@@ -33,6 +37,12 @@ class Users(db.Model):
     games_started = db.Column(db.Integer, nullable=False, default=0)
     games_won = db.Column(db.Integer, nullable=False, default=0)
     score = db.Column(db.Integer, nullable=False, default=0)
+
+
+class Admin(db.Model):
+  __tablename__ = 'admin'
+
+  user_id = db.Column(db.String(128), db.ForeignKey('users.user_id'), primary_key=True)
 
 
 class Images(db.Model):
@@ -83,6 +93,18 @@ class Game(db.Model):
                             backref=db.backref('created_games', lazy=True),
                             foreign_keys=[created_by])
 
+class GameCode(db.Model):
+    __tablename__ = 'game_code'
+
+    game_code = db.Column(
+        db.String(8), 
+        primary_key=True,
+        server_default=sa.text("SUBSTR(MD5(RANDOM()::text), 1, 8)")
+    )
+    game_id = db.Column(db.Integer, db.ForeignKey('games.game_id'), nullable=False)
+
+    game = db.relationship('Game', backref=db.backref('game_code', uselist=False))
+    __table_args__ = (db.UniqueConstraint('game_id', name='uq_game_codes_game_id'),)
 
 class UserGameSession(db.Model):
     """Tracks individual user sessions for each game"""
@@ -149,10 +171,36 @@ class Tag(db.Model):
     __tablename__ = 'tag'
 
     tag_id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable = False)
+    name = db.Column(db.String(50), nullable=False)
+    admin_id = db.Column(db.Integer, nullable=True)
+
 
 class UserTags(db.Model):
     __tablename__ = 'user_tags'
 
     user_id = db.Column(db.String(128), db.ForeignKey('users.user_id'), primary_key=True)
+    tag_id = db.Column(db.Integer, db.ForeignKey('tag.tag_id'), primary_key=True)
+
+class CompetitionGame(db.Model):
+    __tablename__ = 'competition_games'
+
+    id = db.Column(db.Integer, primary_key=True)
+    competition_id = db.Column(db.Integer, db.ForeignKey('competitions.competition_id'), nullable=False)
+    game_id = db.Column(db.Integer, db.ForeignKey('games.game_id'), nullable=False)
+
+    competition = db.relationship('Competition', backref=db.backref('competition_games', lazy=True))
+    game = db.relationship('Game', backref=db.backref('competition_games', lazy=True)) 
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.tag_id'), primary_key=True) 
+
+@event.listens_for(Competition, 'before_insert')
+@event.listens_for(Competition, 'before_update')
+def ensure_date_equality(mapper, connection, target):
+    """Ensure that start_date and end_date in Competition match date_created and expiry_date in Game."""
+    # Fetch the associated game
+    game = db.session.query(Game).filter_by(game_id=target.competition_id).first()
+    if game:
+        # Ensure end_date = expiry_date
+        if target.end_date != game.expiry_date:
+            raise ValueError(f"end_date ({target.end_date}) must match expiry_date ({game.expiry_date}) of the linked game.")
+    else:
+        raise ValueError(f"No game found with ID {target.competition_id}!")

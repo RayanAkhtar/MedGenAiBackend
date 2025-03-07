@@ -171,9 +171,8 @@ cython_debug/
 .pypirc
 
 #Script
-scripts/
 testscript.py
-
+scripts/
 medgenaifirebase.json
 
 #SQL stuff
@@ -181,3 +180,6 @@ migrations/
 
 *.pem
 *.sql
+
+#Log files
+*.log

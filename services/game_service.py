@@ -125,15 +125,17 @@ class GameService:
                 db.session.commit()
                 raise ValueError(f"Game {game_id} has expired")
 
-            # Check if user already has an active session
+            # Check if user already has a session for this game (active or completed)
             existing_session = UserGameSession.query.filter_by(
                 game_id=game_id,
-                user_id=user_id,
-                session_status='active'
+                user_id=user_id
             ).first()
 
             if existing_session:
-                raise ValueError(f"User already has an active session for game {game_id}")
+                if existing_session.session_status == 'active':
+                    raise ValueError(f"User already has an active session for game {game_id}")
+                else:
+                    raise ValueError(f"User has already played game {game_id}")
 
             # Create new session for user
             user_session = UserGameSession(
@@ -279,12 +281,11 @@ class GameService:
                     correct_guesses += 1
                 total_guesses += 1
                 
-                # Save the guess
+                # Save the guess without is_correct field
                 user_guess = UserGuess(
                     user_id=user_id,
                     image_id=image.image_id,
                     user_guess_type=user_guess_type,
-                    is_correct=is_correct,
                     time_taken=0,  # No time data in current format
                     session_id=session.session_id,
                     date_of_guess=datetime.now()
@@ -294,7 +295,7 @@ class GameService:
                 
                 # Process feedback if provided
                 if feedback_text or (x_coord is not None and y_coord is not None):
-                    # Create feedback entry without specifying feedback_id
+                    # Create feedback entry
                     feedback = Feedback(
                         x=x_coord if x_coord is not None else 0,
                         y=y_coord if y_coord is not None else 0,
@@ -304,7 +305,7 @@ class GameService:
                         confidence=50  # Default confidence value
                     )
                     db.session.add(feedback)
-                    db.session.flush()  # This will populate the feedback_id
+                    db.session.flush()  # Get the feedback ID
                     
                     # Link feedback to user guess
                     feedback_user = FeedbackUser(
@@ -321,6 +322,7 @@ class GameService:
             session.final_score = score
             session.correct_guesses = correct_guesses
             session.total_guesses = total_guesses
+            session.session_status = "completed"
             
             # Update user stats
             user.score += score
@@ -353,3 +355,69 @@ class GameService:
             raise ValueError(f"Session not found for user {user_id} in game {game_id}")
         session['last_accessed'] = datetime.datetime.now()
         return session
+    
+
+    def get_game(self, game_id: str, user_id: str = None) -> Dict:
+        """
+        Get game data including images and sessions
+        
+        Args:
+            game_id (str): ID of the game to retrieve
+            user_id (str, optional): If provided, also returns this user's session data
+            
+        Returns:
+            dict: Game data including images and sessions
+        """
+        try:
+            print(f"Getting game with ID {game_id} for user {user_id}")
+            
+            # Get the game
+            game = Game.query.filter_by(game_id=game_id).first()
+            print(f"Found game: {game}")
+            if not game:
+                raise ValueError(f"Game with ID {game_id} not found")
+            
+            # Get all game images
+            game_images = []
+            print(f"Getting images for game {game_id}")
+            for game_image in game.game_images:
+                image = game_image.image
+                print(f"Processing image {image.image_id}: {image.image_path}")
+                game_images.append({
+                    'url': f"/api/images/view/{image.image_path}",
+                    'type': image.image_type
+                })
+            print(f"Found {len(game_images)} images")
+            
+            # Get all sessions for this game
+            sessions = []
+            print(f"Getting sessions for game {game_id}")
+            for session in UserGameSession.query.filter_by(game_id=game_id).all():
+                user = Users.query.filter_by(user_id=session.user_id).first()
+                print(f"Processing session {session.session_id} for user {user.username if user else 'Unknown'}")
+                
+                session_data = {
+                    'session_id': session.session_id,
+                    'user_id': session.user_id,
+                    'username': user.username if user else "Unknown",
+                    'start_time': session.start_time.isoformat() if session.start_time else None,
+                    'completion_time': session.completion_time.isoformat() if session.completion_time else None,
+                    'status': session.session_status,
+                    'score': session.final_score
+                }
+                
+                sessions.append(session_data)
+            print(f"Found {len(sessions)} sessions")
+            
+            # Build response
+            response = {
+                'game_id': game.game_id,
+                'images': game_images,
+            }
+            print(f"Returning response for game {game_id}")
+        
+            return response
+            
+        except Exception as e:
+            print(f"Error in get_game: {str(e)}")
+            raise

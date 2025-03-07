@@ -4,7 +4,6 @@ from pathlib import Path
 import psycopg2
 from datetime import datetime
 
-# Database connection parameters - update these with your actual values
 DB_PARAMS = {
     "dbname": "medgen",
     "user": "medgen_user",
@@ -13,7 +12,6 @@ DB_PARAMS = {
     "port": "5432"
 }
 
-# Constants
 IMAGE_DIRECTORY = Path("../MedGenAI-Images/Images").resolve()
 SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp"}
 STARTING_ID = 100000

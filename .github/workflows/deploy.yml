@@ -1,3 +1,4 @@
+
 name: Deploy Backend
 
 on:
@@ -5,7 +6,6 @@ on:
     branches:
       - main
       - admin
-      - competitions
       # Add more branches as needed
 
 concurrency:
@@ -26,18 +26,14 @@ jobs:
       # Add more elif statements for each branch as needed
       - name: Set Environment Variables Based on Branch
         run: |
-          if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
             echo "BRANCH_NAME=main" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-main" >> $GITHUB_ENV
             echo "APP_PORT=5328" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF#refs/heads/}" == "admin" ]]; then
+          elif [[ "${GITHUB_REF_NAME}" == "admin" ]]; then
             echo "BRANCH_NAME=admin" >> $GITHUB_ENV
             echo "CONTAINER_NAME=backend-admin" >> $GITHUB_ENV
             echo "APP_PORT=5329" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF#refs/heads/}" == "competitions" ]]; then
-            echo "BRANCH_NAME=competitions" >> $GITHUB_ENV
-            echo "CONTAINER_NAME=backend-competitions" >> $GITHUB_ENV
-            echo "APP_PORT=5341" >> $GITHUB_ENV
           else
             echo "Branch not configured for deployment"
             exit 1
@@ -55,10 +51,11 @@ jobs:
             git fetch origin ${{ env.BRANCH_NAME }}
             git checkout ${{ env.BRANCH_NAME }}
             git pull origin ${{ env.BRANCH_NAME }}
-            docker rm -f ${{ env.CONTAINER_NAME }} || true
             cd
+            docker image prune -f || true
             docker build -t ${{ env.CONTAINER_NAME }} -f MedGenAiBackend/Dockerfile .
             cd MedGenAiBackend
+            docker rm -f ${{ env.CONTAINER_NAME }} || true
             docker run -d --name ${{ env.CONTAINER_NAME }} \
               -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
               --env-file=.env \

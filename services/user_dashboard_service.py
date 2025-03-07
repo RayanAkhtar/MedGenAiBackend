@@ -3,40 +3,71 @@ from sqlalchemy import func, desc
 from datetime import datetime, timedelta
 from flask import current_app
 import math
-
+from __init__ import db
 class UserDashboardService:
     def get_user_stats(self, user_id):
         """Get user statistics for the dashboard"""
-        # Get user from database
-        user = Users.query.filter_by(user_id=user_id).first()
-        if not user:
-            raise ValueError("User not found")
+        try:
+            # Get user from database
+            user = Users.query.filter_by(user_id=user_id).first()
+            if not user:
+                print(f"User not found: {user_id}")
+                raise ValueError(f"User with ID {user_id} not found")
             
-        # Calculate average accuracy
-        accuracy_query = UserGuess.query.filter_by(user_id=user_id)
-        total_guesses = accuracy_query.count()
-        
-        if total_guesses > 0:
-            correct_guesses = accuracy_query.filter_by(is_correct=True).count()
-            average_accuracy = round((correct_guesses / total_guesses) * 100)
-        else:
+            # Calculate average accuracy from completed game sessions
+            completed_sessions = UserGameSession.query.filter_by(
+                user_id=user_id,
+                session_status="completed"
+            ).all()
+            
+            print(f"Found {len(completed_sessions)} completed sessions for user {user_id}")
+            
+            total_correct = 0
+            total_guesses = 0
+            
+            for session in completed_sessions:
+                # Add defensive checks for None values
+                session_correct = session.correct_guesses or 0
+                session_total = session.total_guesses or 0
+                
+                print(f"Session {session.session_id}: correct={session_correct}, total={session_total}")
+                
+                total_correct += session_correct
+                total_guesses += session_total
+            
+            # Default accuracy to 0 if no guesses
             average_accuracy = 0
+            if total_guesses > 0:
+                average_accuracy = round((total_correct / total_guesses) * 100)
             
-        # Count completed challenges/games
-        challenges_completed = UserGameSession.query.filter_by(
-            user_id=user_id,
-            session_status="completed"
-        ).count()
-        
-        # Calculate user rank based on score
-        user_rank_query = Users.query.filter(Users.score > user.score).count()
-        current_rank = user_rank_query + 1  # Add 1 because ranks start at 1
-        
-        return {
-            "averageAccuracy": average_accuracy,
-            "challengesCompleted": challenges_completed,
-            "currentRank": current_rank
-        }
+            print(f"Calculated accuracy: {average_accuracy}% ({total_correct}/{total_guesses})")
+            
+            # Count completed challenges/games
+            challenges_completed = len(completed_sessions)
+            
+            # Calculate user rank based on score
+            user_rank_query = Users.query.filter(Users.score > user.score).count()
+            current_rank = user_rank_query + 1  # Add 1 because ranks start at 1
+            
+            print(f"User rank: {current_rank}")
+            
+            # Return stats with default values for safety
+            return {
+                "averageAccuracy": average_accuracy,
+                "challengesCompleted": challenges_completed,
+                "currentRank": current_rank,
+                "totalScore": user.score or 0
+            }
+        except Exception as e:
+            print(f"Error in get_user_stats: {str(e)}")
+            # Return default values in case of error
+            return {
+                "averageAccuracy": 0,
+                "challengesCompleted": 0,
+                "currentRank": 0,
+                "totalScore": 0,
+                "error": str(e)
+            }
     
     def get_recent_activity(self, user_id):
         """Get user's recent game activity"""
@@ -83,19 +114,35 @@ class UserDashboardService:
     
     def get_leaderboard(self):
         """Get global leaderboard data"""
-        # Get top 10 users by score
-        top_users = Users.query.order_by(Users.score.desc()).limit(10).all()
-        
+        # Get all users and calculate their accuracy
+        users = Users.query.all()
         players = []
         
-        for rank, user in enumerate(top_users, 1):
-            # Calculate user's accuracy
-            user_guesses = UserGuess.query.filter_by(user_id=user.user_id)
-            total_guesses = user_guesses.count()
+        for user in users:
+            # Calculate user's accuracy based on game sessions
+            user_sessions = UserGameSession.query.filter_by(
+                user_id=user.user_id,
+                session_status="completed"
+            )
+            total_sessions = user_sessions.count()
             
-            if total_guesses > 0:
-                correct_guesses = user_guesses.filter_by(is_correct=True).count()
-                accuracy = round((correct_guesses / total_guesses) * 100)
+            if total_sessions > 0:
+                # Get sum of correct guesses and total guesses from all sessions
+                session_stats = db.session.query(
+                    func.sum(UserGameSession.correct_guesses).label("total_correct"),
+                    func.sum(UserGameSession.total_guesses).label("total_guesses")
+                ).filter(
+                    UserGameSession.user_id == user.user_id,
+                    UserGameSession.session_status == "completed"
+                ).first()
+                
+                total_correct = session_stats.total_correct or 0
+                total_guesses = session_stats.total_guesses or 0
+                
+                if total_guesses > 0:
+                    accuracy = round((total_correct / total_guesses) * 100)
+                else:
+                    accuracy = 0
             else:
                 accuracy = 0
                 
@@ -107,10 +154,17 @@ class UserDashboardService:
                 display_name = display_name[:17] + "..."
                 
             players.append({
-                "rank": rank,
                 "name": display_name,
                 "accuracy": accuracy
             })
+        
+        # Sort by accuracy descending and take top 10
+        players.sort(key=lambda x: x["accuracy"], reverse=True)
+        players = players[:10]
+        
+        # Add ranks after sorting
+        for i, player in enumerate(players, 1):
+            player["rank"] = i
             
         return {
             "players": players
