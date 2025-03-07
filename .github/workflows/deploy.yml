@@ -52,7 +52,6 @@ jobs:
             git checkout ${{ env.BRANCH_NAME }}
             git pull origin ${{ env.BRANCH_NAME }}
             cd
-            docker image prune -f || true
             docker build -t ${{ env.CONTAINER_NAME }} -f MedGenAiBackend/Dockerfile .
             cd MedGenAiBackend
             docker rm -f ${{ env.CONTAINER_NAME }} || true
@@ -62,3 +61,4 @@ jobs:
               -e PORT=${{ env.APP_PORT }} \
               -v $(pwd)/medgenaifirebase.json:/app/medgenaifirebase.json \
               ${{ env.CONTAINER_NAME }}
+            docker image prune -a --force
