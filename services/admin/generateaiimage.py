@@ -5,7 +5,7 @@ from sqlalchemy import or_
 from models import Images
 from sqlalchemy.sql.expression import func
 
-BASE_IMAGES_PATH = os.path.abspath(os.path.join(os.getcwd(), "../MedGenAI-Images/Images"))
+BASE_IMAGES_PATH = "../MedGenAI-Images/Images"
 CF_FOLDERS = {
     'Female': 'cf_Female',
     'Male': 'cf_Male',
@@ -27,6 +27,7 @@ def map_age_range(age_range):
 def check_folder_for_image(folder_name, file_name):
     folder_path = os.path.join(BASE_IMAGES_PATH, folder_name)
     file_path = os.path.join(folder_path, file_name)
+    print("file path: ", file_path)
     if os.path.exists(file_path):
         return file_path
     return None
@@ -44,10 +45,18 @@ def get_real_image_based_on_sex_or_disease(gender: str, disease: str, file_name:
     elif disease and disease != "any":
         folder = CF_FOLDERS.get(disease)
 
+    print("folder, ", folder)
     if folder:
+        print("a")
+        file_name = file_name.split(".")[0] + "_" + folder + ".jpg"
         image_path = check_folder_for_image(folder, file_name)
+        print("b")
+        print("image path: ", image_path)
         if image_path:
+            print("c")
             image_url = url_for('adminGenerate.serve_image', filename=os.path.join(folder, file_name), _external=True)
+            print("d")
+            print("image_url:", image_url)
             return jsonify({
                 "imagePath": image_url,
                 "fileName": file_name
@@ -69,7 +78,7 @@ def generate_image(age: str = "", gender: str = "", disease: str = "", real_imag
     if gender_condition or disease_condition:
         query = query.filter(or_(gender_condition, disease_condition))
 
-    if real_image_file_name and (gender != "any" or age != "any" or disease != "any"):
+    if real_image_file_name and (gender != "any" or disease != "any"):
         return get_real_image_based_on_sex_or_disease(gender, disease, real_image_file_name)
 
     image = query.first()
