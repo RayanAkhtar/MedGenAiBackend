@@ -45,18 +45,11 @@ def get_real_image_based_on_sex_or_disease(gender: str, disease: str, file_name:
     elif disease and disease != "any":
         folder = CF_FOLDERS.get(disease)
 
-    print("folder, ", folder)
     if folder:
-        print("a")
         file_name = file_name.split(".")[0] + "_" + folder + ".jpg"
         image_path = check_folder_for_image(folder, file_name)
-        print("b")
-        print("image path: ", image_path)
         if image_path:
-            print("c")
             image_url = url_for('adminGenerate.serve_image', filename=os.path.join(folder, file_name), _external=True)
-            print("d")
-            print("image_url:", image_url)
             return jsonify({
                 "imagePath": image_url,
                 "fileName": file_name
