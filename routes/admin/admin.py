@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request, flash, send_from_directory
+from sqlalchemy.exc import SQLAlchemyError
 import os
 import logging
 from werkzeug.utils import secure_filename
@@ -14,6 +15,7 @@ from services.admin.admin import (
     list_tags,
     filter_users_by_tags,
     count_users_by_tags,
+    assign_tags_to_users,
     get_metadata_counts
 )
 from services.admin_user import (
@@ -118,6 +120,24 @@ def count_users_by_tags_api():
     except Exception as e:
         logging.error(f"Server error: {str(e)}")
         return jsonify({"error": "An unexpected error occurred"}), 500
+
+@bp.route('/admin/assignTags', methods=['POST'])
+def assign_tags_route():
+    data = request.get_json()
+    usernames = data.get('usernames', [])
+    tags = data.get('tags', [])
+    admin_id = data.get('admin_id', '4')
+    
+    if not usernames or not tags or not admin_id:
+        return jsonify({"error": "usernames, tags, and admin_id are required fields."}), 400
+
+    try:
+        response = assign_tags_to_users(usernames, tags, admin_id)
+        return response
+
+    except SQLAlchemyError as e:
+        print(f"Database error: {e}")
+        return jsonify({"error": "Internal server error."}), 500
 
 @bp.route('/admin/getUsers', methods=['GET'])
 def get_users_data():

@@ -1,6 +1,7 @@
 from __init__ import db
 from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags
-from sqlalchemy import func, desc, text, case
+from sqlalchemy import func, desc, text, case, and_
+from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 import os
 import logging
@@ -211,6 +212,44 @@ def count_users_by_tags(tag_names, match_all=True):
         logging.error(f"Error in count_users_by_tags: {str(e)}", exc_info=True)
         raise
 
+def assign_tags_to_users(usernames, tags, admin_id):
+    try:
+        users = db.session.query(Users).filter(Users.username.in_(usernames)).all()
+        if not users:
+            return jsonify({"error": "No valid users found for the provided usernames."}), 400
+        
+        user_ids = {user.user_id for user in users}
+        tag_results = db.session.query(Tag).filter(
+            and_(
+                Tag.name.in_(tags),
+                Tag.admin_id == admin_id
+            )
+        ).all()
+
+        if not tag_results:
+            return jsonify({"error": "No valid private tags found for the provided admin ID."}), 400
+        
+        tag_id_map = {tag.name: tag.tag_id for tag in tag_results}
+
+        new_user_tags = []
+        for user_id in user_ids:
+            for tag_name in tags:
+                if tag_name in tag_id_map:
+                    tag_id = tag_id_map[tag_name]
+                    existing = db.session.query(UserTags).filter_by(user_id=user_id, tag_id=tag_id).first()
+                    if not existing:
+                        new_user_tags.append(UserTags(user_id=user_id, tag_id=tag_id))
+
+        if new_user_tags:
+            db.session.add_all(new_user_tags)
+            db.session.commit()
+        
+        return jsonify({"message": f"Tags assigned successfully to {len(user_ids)} users."}), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print(f"Error assigning tags to users: {e}")
+        return jsonify({"error": "An error occurred while assigning tags."}), 500
 
 UPLOAD_FOLDER = '../MedGenAI-Images/Images/'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
