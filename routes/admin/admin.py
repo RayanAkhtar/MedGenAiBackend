@@ -86,7 +86,8 @@ def get_metadata_counts_route():
 def tags():
 	"""API to return list of all tags"""
 	try:
-		return jsonify(list_tags('4'))
+	    admin_only = request.args.get('admin_only', 'false').lower() == 'true'
+	    return jsonify(list_tags('4', admin_only))
 	except Exception as e:
 		logging.error(f"Server error: {str(e)}")
 		return jsonify({"error": "An unexpected error occured"}), 500

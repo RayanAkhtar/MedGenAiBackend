@@ -120,11 +120,14 @@ def get_random_unresolved_feedback(image_id):
         db.session.rollback()
         return {"error": str(e)}
 
-def list_tags(admin_id):
+def list_tags(admin_id, admin_only=False):
     try:
-        tags = db.session.query(Tag.name).filter(
-            (Tag.admin_id == admin_id) | (Tag.admin_id == None)
-        ).distinct().all()
+        if admin_only:
+            tags = db.session.query(Tag.name).filter(Tag.admin_id == admin_id).distinct().all()
+        else:
+            tags = db.session.query(Tag.name).filter(
+                (Tag.admin_id == admin_id) | (Tag.admin_id == None)
+            ).distinct().all()
         return [tag[0] for tag in tags]
     except Exception as e:
         logging.error(f"Error fetching tags: {str(e)}", exc_info=True)
