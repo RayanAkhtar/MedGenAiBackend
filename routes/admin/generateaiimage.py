@@ -1,7 +1,6 @@
 import os
 from flask import Blueprint, request, jsonify, send_file
 from services.admin.generateaiimage import (generate_image, get_random_real_image)
-from services.admin.getrandomrealimage import get_random_real_image  # Import function
 from werkzeug.utils import secure_filename
 from __init__ import db
 from models import Images
