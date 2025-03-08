@@ -111,6 +111,6 @@ def get_random_real_image():
         
         image_url = url_for('adminGenerate.serve_image', filename=os.path.join("real_images", selected_image), _external=True)
 
-        image_url, selected_image
+        return image_url, selected_image
     except Exception as e:
         return jsonify({"error": str(e)}), 500

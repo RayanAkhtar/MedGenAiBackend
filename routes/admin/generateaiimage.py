@@ -11,7 +11,7 @@ bp = Blueprint("adminGenerate", __name__)
 UPLOAD_FOLDER = "../MedGenAI-Images/Images/generated"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-BASE_IMAGES_PATH = os.path.abspath(os.path.join(os.getcwd(), "../MedGenAI-Images/Images"))
+BASE_IMAGES_PATH = "../MedGenAI-Images/Images"
 
 @bp.route("/admin/generateImage", methods=["GET"])
 def generate_image_route():
@@ -32,8 +32,7 @@ def get_random_real_image_route():
     try:
         image_path, file_name = get_random_real_image()
         if image_path:
-            image_full_path = os.path.join(BASE_IMAGES_PATH, image_path)
-
+            image_full_path = os.path.join(BASE_IMAGES_PATH, "real_images/" + file_name)
             if os.path.exists(image_full_path):
                 return send_file(image_full_path, mimetype="image/jpeg", as_attachment=True, download_name=file_name)
             else:
