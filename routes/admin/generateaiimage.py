@@ -27,9 +27,9 @@ def generate_image_route():
         return jsonify({"error": "No matching images found"}), 404
 
 
-@bp.route("/admin/getRandomRealImage", methods=["GET"])
-def get_random_real_image_route():
-    """Fetch a random real image and return the actual image file."""
+@bp.route("/admin/getRandomRealImagePath", methods=["GET"])
+def get_random_real_image_path():
+    """Fetch a random real image path and return it as JSON."""
     try:
         all_images = [f for f in os.listdir(REAL_IMAGES_PATH) if os.path.isfile(os.path.join(REAL_IMAGES_PATH, f))]
         
@@ -37,15 +37,13 @@ def get_random_real_image_route():
             return jsonify({"error": "No images found in real_images folder"}), 404
         
         selected_image = random.choice(all_images)
-        image_full_path = os.path.join(BASE_IMAGES_PATH, "real_images", selected_image)
+        image_path = f"real_images/{selected_image}"
 
-        if os.path.exists(image_full_path):
-            return send_file(image_full_path, mimetype="image/jpeg", as_attachment=True, download_name=selected_image)
-        else:
-            return jsonify({"error": "Image file not found"}), 404
+        return jsonify({"imagePath": image_path, "fileName": selected_image})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
