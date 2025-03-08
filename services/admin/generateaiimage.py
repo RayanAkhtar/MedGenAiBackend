@@ -70,10 +70,8 @@ def generate_image(age: str = "", gender: str = "", disease: str = "", real_imag
         query = query.filter(or_(gender_condition, disease_condition))
 
     if real_image_file_name:
-        real_image = get_real_image_based_on_sex_or_disease(gender, disease, real_image_file_name)
-        if real_image:
-            return real_image
-    
+        return get_real_image_based_on_sex_or_disease(gender, disease, real_image_file_name)
+
     image = query.first()
     if image:
         file_name = f"{image.image_id}.jpg"
@@ -102,20 +100,26 @@ def generate_image(age: str = "", gender: str = "", disease: str = "", real_imag
     return jsonify({"error": "No matching image found"}), 404
 
 
-def get_random_real_image():
-    try:
-        all_images = [f for f in os.listdir(REAL_IMAGES_PATH) if os.path.isfile(os.path.join(REAL_IMAGES_PATH, f))]
-        
-        if not all_images:
-            return jsonify({"error": "No images found in real_images folder"}), 404
-        
-        selected_image = random.choice(all_images)
-        
-        image_url = url_for('adminGenerate.serve_image', filename=os.path.join("real_images", selected_image), _external=True)
+def get_real_image_based_on_sex_or_disease(gender: str, disease: str, file_name: str):
+    """
+    Check the corresponding folder for a real image based on the gender or disease
+    If the file exists, return the path, else return None.
+    """
+    folder = None
 
-        return jsonify({
-            "imagePath": image_url,
-            "fileName": selected_image
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    if gender and gender != "any":
+        folder = CF_FOLDERS.get(gender)
+
+    elif disease and disease != "any":
+        folder = CF_FOLDERS.get(disease)
+
+    if folder:
+        image_path = check_folder_for_image(folder, file_name)
+        if image_path:
+            image_url = url_for('adminGenerate.serve_image', filename=os.path.join(folder, file_name), _external=True)
+            return {
+                "imagePath": image_url,
+                "fileName": file_name
+            }
+    
+    return None
