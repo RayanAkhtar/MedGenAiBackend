@@ -208,14 +208,14 @@ def create_new_user_game_session():
     
     # Get fields from the JSON payload
     game_code = data.get('game_code')
-    user_id = data.get('user_id')
+    user_name = data.get('user_name')
     
     # Validate that both fields exist
-    if game_code is None or user_id is None:
-        return jsonify({'error': 'Missing "game_id" or "user_id"'}), 400
+    if game_code is None or user_name is None:
+        return jsonify({'error': 'Missing "game_id" or "user_name"'}), 400
     
     # Call your function with the retrieved values
-    res, code = create_user_game_session(game_code, user_id)
+    res, code = create_user_game_session(game_code, user_name)
     
     # Return a JSON response
 

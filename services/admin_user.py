@@ -194,9 +194,9 @@ def get_game_by_game_code(game_code):
         return {"error": str(e)}, 404
     
 
-def create_user_game_session(game_code, user_id):
+def create_user_game_session(game_code, user_name):
     """Creates a new UserGameSession and commits it to the database."""
-    return create_multiple_game_sessions(game_code, [user_id])
+    return create_multiple_game_sessions(game_code, [user_name])
     
 def create_multiple_game_sessions(game_code, usernames):
     """Creates multiple UserGameSession objects for a given game_id and list of user_ids."""
@@ -248,8 +248,8 @@ def create_multiple_game_sessions(game_code, usernames):
 def get_assigned_games_by_username(username):
     try:
         # Perform a single query to fetch game data for a user based on username
-        games = db.session.query(Game).join(UserGameSession, Game.game_id == UserGameSession.game_id) \
-            .join(Users, Users.user_id == UserGameSession.user_id) \
+        games = db.session.query(Game, UserGameSession.session_status, GameCode.game_code).join(UserGameSession, Game.game_id == UserGameSession.game_id) \
+            .join(Users, Users.user_id == UserGameSession.user_id).join(GameCode, Game.game_id == GameCode.game_id) \
             .filter(Users.username == username).all()
 
         # Prepare the game data
@@ -258,8 +258,10 @@ def get_assigned_games_by_username(username):
             'game_mode': game.game_mode,
             'game_board': game.game_board,
             'game_status': game.game_status,
-            'expiry_date': game.expiry_date
-        } for game in games]
+            'expiry_date': game.expiry_date,
+            'active': session_status == 'active',
+            'game_code': game_code
+        } for game, session_status, game_code in games]
 
         return game_data
 
