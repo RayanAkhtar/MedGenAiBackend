@@ -28,11 +28,16 @@ def generate_image_route():
 
 @bp.route("/admin/getRandomRealImage", methods=["GET"])
 def get_random_real_image_route():
-    """Fetch a random real image and return its path & filename."""
+    """Fetch a random real image and return its path, filename, and the image itself."""
     try:
         image_path, file_name = get_random_real_image()
         if image_path:
-            return jsonify({"imagePath": image_path, "fileName": file_name}), 200
+            image_full_path = os.path.join(BASE_IMAGES_PATH, image_path)
+
+            if os.path.exists(image_full_path):
+                return send_file(image_full_path, mimetype="image/jpeg", as_attachment=True, download_name=file_name)
+            else:
+                return jsonify({"error": "Image file not found"}), 404
         else:
             return jsonify({"error": "No real images found"}), 404
     except Exception as e:
