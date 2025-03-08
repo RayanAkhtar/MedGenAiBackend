@@ -1,13 +1,14 @@
 import os
 from flask import Blueprint, request, jsonify, send_file
-from services.admin.generateaiimage import (generate_image, get_random_real_image)
+from services.admin.generateaiimage import generate_image
 from werkzeug.utils import secure_filename
 from __init__ import db
 from models import Images
 from datetime import datetime
+import random
 
 bp = Blueprint("adminGenerate", __name__)
-
+REAL_IMAGES_PATH = "../MedGenAI-Images/Images/real_images"
 UPLOAD_FOLDER = "../MedGenAI-Images/Images/generated"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -28,19 +29,24 @@ def generate_image_route():
 
 @bp.route("/admin/getRandomRealImage", methods=["GET"])
 def get_random_real_image_route():
-    """Fetch a random real image and return its path, filename, and the image itself."""
+    """Fetch a random real image and return the actual image file."""
     try:
-        image_path, file_name = get_random_real_image()
-        if image_path:
-            image_full_path = os.path.join(BASE_IMAGES_PATH, "real_images/" + file_name)
-            if os.path.exists(image_full_path):
-                return send_file(image_full_path, mimetype="image/jpeg", as_attachment=True, download_name=file_name)
-            else:
-                return jsonify({"error": "Image file not found"}), 404
+        all_images = [f for f in os.listdir(REAL_IMAGES_PATH) if os.path.isfile(os.path.join(REAL_IMAGES_PATH, f))]
+        
+        if not all_images:
+            return jsonify({"error": "No images found in real_images folder"}), 404
+        
+        selected_image = random.choice(all_images)
+        image_full_path = os.path.join(BASE_IMAGES_PATH, "real_images", selected_image)
+
+        if os.path.exists(image_full_path):
+            return send_file(image_full_path, mimetype="image/jpeg", as_attachment=True, download_name=selected_image)
         else:
-            return jsonify({"error": "No real images found"}), 404
+            return jsonify({"error": "Image file not found"}), 404
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 @bp.route("/admin/saveGeneratedImage", methods=["POST"])

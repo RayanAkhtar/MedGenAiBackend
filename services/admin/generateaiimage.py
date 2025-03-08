@@ -98,19 +98,3 @@ def generate_image(age: str = "", gender: str = "", disease: str = "", real_imag
         })
 
     return jsonify({"error": "No matching image found"}), 404
-
-
-def get_random_real_image():
-    try:
-        all_images = [f for f in os.listdir(REAL_IMAGES_PATH) if os.path.isfile(os.path.join(REAL_IMAGES_PATH, f))]
-        
-        if not all_images:
-            return jsonify({"error": "No images found in real_images folder"}), 404
-        
-        selected_image = random.choice(all_images)
-        
-        image_url = url_for('adminGenerate.serve_image', filename=os.path.join("real_images", selected_image), _external=True)
-
-        return image_url, selected_image
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
