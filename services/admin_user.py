@@ -248,8 +248,8 @@ def create_multiple_game_sessions(game_code, usernames):
 def get_assigned_games_by_username(username):
     try:
         # Perform a single query to fetch game data for a user based on username
-        games = db.session.query(Game, UserGameSession.session_status).join(UserGameSession, Game.game_id == UserGameSession.game_id) \
-            .join(Users, Users.user_id == UserGameSession.user_id) \
+        games = db.session.query(Game, UserGameSession.session_status, GameCode.game_code).join(UserGameSession, Game.game_id == UserGameSession.game_id) \
+            .join(Users, Users.user_id == UserGameSession.user_id).join(GameCode, Game.game_id == GameCode.game_id) \
             .filter(Users.username == username).all()
 
         # Prepare the game data
@@ -260,7 +260,8 @@ def get_assigned_games_by_username(username):
             'game_status': game.game_status,
             'expiry_date': game.expiry_date,
             'active': session_status == 'active'
-        } for game, session_status in games]
+            'game_code': game_code
+        } for game, session_status, game_code in games]
 
         return game_data
 
