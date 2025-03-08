@@ -24,7 +24,6 @@ def get_profile_data(user_id):
     # Get completed game sessions
     completed_sessions = UserGameSession.query.filter_by(
         user_id=user_id,
-        session_status="completed"
     ).all()
     
     # Calculate total games played
@@ -70,9 +69,7 @@ def get_recent_game_history(user_id):
     """
     # Get user's completed game sessions, ordered by completion time
     sessions = UserGameSession.query.filter_by(
-        user_id=user_id,
-        session_status="completed"
-    ).order_by(UserGameSession.completion_time.desc()).limit(10).all()
+        user_id=user_id    ).order_by(UserGameSession.completion_time.desc()).limit(10).all()
     
     history = []
     
@@ -127,8 +124,7 @@ def get_user_performance(user_id):
     
     sessions = UserGameSession.query.filter(
         UserGameSession.user_id == user_id,
-        UserGameSession.session_status == "completed",
-        UserGameSession.completion_time >= thirty_days_ago
+                        UserGameSession.completion_time >= thirty_days_ago
     ).order_by(UserGameSession.completion_time).all()
     
     # Initialize performance data

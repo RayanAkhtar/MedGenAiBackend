@@ -1,4 +1,4 @@
-from models import Users, Images, UserGuess, Game, GameImages, UserGameSession, Feedback, FeedbackUser
+from models import Users, Images, UserGuess, Game, GameImages, UserGameSession, Feedback, FeedbackUser, Competition, CompetitionGame
 from __init__ import db
 from typing import Tuple, List, Dict
 import uuid
@@ -105,6 +105,8 @@ class GameService:
             print(f"Error initializing classic game: {str(e)}")
             db.session.rollback()
             raise
+
+   
 
     def join_game(self, game_id: int, user_id: str) -> Tuple[str, List[Dict]]:
         """
@@ -281,7 +283,7 @@ class GameService:
                     correct_guesses += 1
                 total_guesses += 1
                 
-                # Save the guess without is_correct field
+                # Save the guess
                 user_guess = UserGuess(
                     user_id=user_id,
                     image_id=image.image_id,
@@ -301,18 +303,26 @@ class GameService:
                         y=y_coord if y_coord is not None else 0,
                         msg=feedback_text if feedback_text else "",
                         resolved=False,
-                        date_added=datetime.now(),
-                        confidence=50  # Default confidence value
+                        date_added=datetime.now()
                     )
                     db.session.add(feedback)
                     db.session.flush()  # Get the feedback ID
                     
                     # Link feedback to user guess
                     feedback_user = FeedbackUser(
-                        feedback_id=feedback.feedback_id,
-                        guess_id=user_guess.guess_id
+                        guess_id=user_guess.guess_id,
+                        feedback_id=feedback.feedback_id
                     )
-                    db.session.add(feedback_user)
+                    
+                    # Check if this feedback_id already exists in the table
+                    existing_feedback_user = FeedbackUser.query.filter_by(
+                        feedback_id=feedback.feedback_id
+                    ).first()
+                    
+                    if not existing_feedback_user:
+                        db.session.add(feedback_user)
+                    else:
+                        print(f"Warning: Feedback ID {feedback.feedback_id} already exists, skipping")
             
             # Calculate score - 10 points per correct guess
             score = correct_guesses * 10
@@ -322,7 +332,6 @@ class GameService:
             session.final_score = score
             session.correct_guesses = correct_guesses
             session.total_guesses = total_guesses
-            session.session_status = "completed"
             
             # Update user stats
             user.score += score
@@ -420,4 +429,102 @@ class GameService:
             
         except Exception as e:
             print(f"Error in get_game: {str(e)}")
+            raise
+
+    def initialize_game_with_code(self, game_code: str, user_id: str, image_count: int) -> Tuple[str, List[Dict]]:
+        """
+        Initialize a game with a specified game code
+        
+        Args:
+            game_code (str): Code of the game to initialize
+            user_id (str): ID of the user
+            
+        Returns:
+            Tuple[str, List[Dict]]: Game ID and list of images
+            
+        Raises:
+            ValueError: If game not found, expired, or user already completed it
+        """
+        real_count = image_count // 2
+        ai_count = image_count // 2
+        
+        # If odd number, add one more real image
+        if image_count % 2 != 0:
+            real_count += 1
+        
+        print(f"Fetching {real_count} real images and {ai_count} AI images")
+        
+        real_images = get_images_rand(real_count, 'real')
+        print(f"Got {len(real_images)} real images")
+        
+        ai_images = get_images_rand(ai_count, 'ai')
+        print(f"Got {len(ai_images)} AI images")
+        # Check if game code exists
+        check_game_code = Game.query.filter_by(game_id=int(game_code)).first()
+        if check_game_code:
+            # return error
+            raise ValueError("Game code already exists")
+        
+        # Create new game
+        new_game = Game(
+            game_id=int(game_code),
+            game_mode='custom',
+            date_created=datetime.datetime.now(),
+            game_board='single',
+            game_status='active',
+            expiry_date=datetime.datetime.now() + datetime.timedelta(days=1),
+            created_by=user_id
+        )
+        db.session.add(new_game)
+        db.session.flush()
+           # Format images with their types and create GameImages entries
+        image_data = []
+        for url in real_images + ai_images:
+            # Get image_id from URL
+            image_path = url.split('/api/images/view/')[-1]
+            image = Images.query.filter_by(image_path=image_path).first()
+            
+            if image:
+                # Create GameImages entry
+                game_image = GameImages(
+                    game_id=new_game.game_id,
+                    image_id=image.image_id
+                )
+                db.session.add(game_image)
+                
+                # Add to image_data for response
+                image_data.append({
+                    'url': url,
+                    'type': image.image_type
+                })
+        return str(new_game.game_id), image_data
+    def get_random_competition_game(self, user_id: str) -> Tuple[str, List[Dict]]:
+        """
+        Get a random game from all available games that hasn't expired
+        
+        Args:
+            user_id (str): ID of the user
+            
+        Returns:
+            Tuple[str, List[Dict]]: Game ID and list of image URLs
+        """
+        try:
+            print(f"Getting random game for user {user_id}")
+            
+            # Get a random game that is active and not expired
+            game = Game.query.filter(
+                Game.game_status == 'active',
+                (Game.expiry_date > datetime.datetime.now()) | (Game.expiry_date.is_(None))
+            ).order_by(db.func.random()).first()
+            
+            if not game:
+                raise ValueError("No active non-expired games found")
+            
+            print(f"Found game ID: {game.game_id}")
+            
+            # Use the join_game method to get the game details
+            return self.join_game(game.game_id, user_id)
+            
+        except Exception as e:
+            print(f"Error getting random game: {str(e)}")
             raise

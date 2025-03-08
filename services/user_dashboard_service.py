@@ -14,26 +14,31 @@ class UserDashboardService:
                 print(f"User not found: {user_id}")
                 raise ValueError(f"User with ID {user_id} not found")
             
+            print(f"Found user: {user.user_id}, username: {user.username}, score: {user.score}")
+            
             # Calculate average accuracy from completed game sessions
             completed_sessions = UserGameSession.query.filter_by(
                 user_id=user_id,
-                session_status="completed"
             ).all()
             
             print(f"Found {len(completed_sessions)} completed sessions for user {user_id}")
             
-            total_correct = 0
-            total_guesses = 0
-            
+            # Debug: Print all sessions
             for session in completed_sessions:
-                # Add defensive checks for None values
-                session_correct = session.correct_guesses or 0
-                session_total = session.total_guesses or 0
-                
-                print(f"Session {session.session_id}: correct={session_correct}, total={session_total}")
-                
-                total_correct += session_correct
-                total_guesses += session_total
+                print(f"Session {session.session_id}: correct={session.correct_guesses}, total={session.total_guesses}, status={session.session_status}")
+            
+            # Use SQL to directly calculate totals
+            session_totals = db.session.query(
+                func.sum(UserGameSession.correct_guesses).label("total_correct"),
+                func.sum(UserGameSession.total_guesses).label("total_guesses")
+            ).filter(
+                UserGameSession.user_id == user_id
+                                        ).first()
+            
+            total_correct = session_totals.total_correct or 0
+            total_guesses = session_totals.total_guesses or 0
+            
+            print(f"SQL query totals: correct={total_correct}, total={total_guesses}")
             
             # Default accuracy to 0 if no guesses
             average_accuracy = 0
@@ -122,7 +127,6 @@ class UserDashboardService:
             # Calculate user's accuracy based on game sessions
             user_sessions = UserGameSession.query.filter_by(
                 user_id=user.user_id,
-                session_status="completed"
             )
             total_sessions = user_sessions.count()
             
@@ -133,7 +137,6 @@ class UserDashboardService:
                     func.sum(UserGameSession.total_guesses).label("total_guesses")
                 ).filter(
                     UserGameSession.user_id == user.user_id,
-                    UserGameSession.session_status == "completed"
                 ).first()
                 
                 total_correct = session_stats.total_correct or 0
