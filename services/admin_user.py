@@ -244,3 +244,24 @@ def create_multiple_game_sessions(game_code, usernames):
         db.session.rollback()
         print(f"Error creating user game sessions: {e}")
         return {'error': str(e)}, 404  # Return None if an error occurs
+
+def get_assigned_games_by_username(username):
+    try:
+        # Perform a single query to fetch game data for a user based on username
+        games = db.session.query(Game).join(UserGameSession, Game.game_id == UserGameSession.game_id) \
+            .join(Users, Users.user_id == UserGameSession.user_id) \
+            .filter(Users.username == username).all()
+
+        # Prepare the game data
+        game_data = [{
+            'game_id': game.game_id,
+            'game_mode': game.game_mode,
+            'game_board': game.game_board,
+            'game_status': game.game_status,
+            'expiry_date': game.expiry_date
+        } for game in games]
+
+        return game_data
+
+    except SQLAlchemyError as e:
+        return {'error': "Error accessing database"}, 404
