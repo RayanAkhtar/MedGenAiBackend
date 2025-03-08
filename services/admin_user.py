@@ -194,9 +194,9 @@ def get_game_by_game_code(game_code):
         return {"error": str(e)}, 404
     
 
-def create_user_game_session(game_code, user_id):
+def create_user_game_session(game_code, user_name):
     """Creates a new UserGameSession and commits it to the database."""
-    return create_multiple_game_sessions(game_code, [user_id])
+    return create_multiple_game_sessions(game_code, [user_name])
     
 def create_multiple_game_sessions(game_code, usernames):
     """Creates multiple UserGameSession objects for a given game_id and list of user_ids."""
@@ -258,7 +258,8 @@ def get_assigned_games_by_username(username):
             'game_mode': game.game_mode,
             'game_board': game.game_board,
             'game_status': game.game_status,
-            'expiry_date': game.expiry_date
+            'expiry_date': game.expiry_date,
+            'active': games.session_status == 'active'
         } for game in games]
 
         return game_data
