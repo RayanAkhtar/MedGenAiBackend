@@ -259,7 +259,7 @@ def get_assigned_games_by_username(username):
             'game_board': game.game_board,
             'game_status': game.game_status,
             'expiry_date': game.expiry_date,
-            'active': games.session_status == 'active'
+            'active': game.session_status == 'active'
         } for game in games]
 
         return game_data
