@@ -9,8 +9,8 @@ BASE_IMAGES_PATH = os.path.abspath(os.path.join(os.getcwd(), "../MedGenAI-Images
 CF_FOLDERS = {
     'Female': 'cf_Female',
     'Male': 'cf_Male',
-    'None': 'cf_No_Disease',
-    'Pleural Effusion': 'cf_Pleural_Effusion'
+    'None': 'cf_No_disease',
+    'Pleural_Effusion': 'cf_Pleural_Effusion'
 }
 REAL_IMAGES_PATH = os.path.join(BASE_IMAGES_PATH, 'real_images')
 
