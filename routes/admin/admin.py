@@ -19,6 +19,7 @@ from services.admin.admin import (
 from services.admin_user import (
     create_multiple_game_sessions, 
     create_user_game_session,
+    get_assigned_games_by_username,
     get_game_by_game_code,
     get_user_data_by_username,
     get_users_with_filters
@@ -240,3 +241,8 @@ def create_new_user_game_session_multi():
         return jsonify({'status': code}), 200
     else:
         return jsonify(res), code
+
+@bp.route('/admin/getGames/<username>', methods=['GET'])
+def get_games_by_user(username):
+    user_data = get_assigned_games_by_username(username)
+    return jsonify(user_data)

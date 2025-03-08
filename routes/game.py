@@ -60,6 +60,64 @@ def initialize_classic_game():
             'status': 'error'
         }), 500
 
+@game_bp.route('/initialize-single-game-with-code', methods=['POST'])
+@require_auth
+def initialize_single_game_with_code():
+    """
+    Initialize a single game with a specified game code
+    """
+    try:
+        data = request.get_json()
+        game_code = data.get('gameCode')
+        image_count = data.get('imageCount', 10)
+        user_id = request.user_id  # From @require_auth decorator
+
+        if not game_code:
+            return jsonify({
+                'error': 'Game code is required',
+                'status': 'error'
+            }), 400
+
+        print(f"Image count: {image_count}")
+    
+        print(f"Initializing game with code {game_code} for user {user_id}")
+        
+        # Ensure user exists in database
+        user = Users.query.filter_by(user_id=user_id).first()
+        if not user:
+            return jsonify({
+                'error': 'User not found',
+                'status': 'error'
+            }), 404
+        
+        print(f"User found: {user}")
+        
+        # Initialize game with code
+        game_id, images = game_service.initialize_game_with_code(
+            game_code=game_code,
+            user_id=user.user_id,
+            image_count=image_count
+        )
+
+        db.session.commit()
+
+        return jsonify({
+            'gameId': game_id,
+            'images': images,
+            'status': 'success'
+        })
+
+    except ValueError as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 400
+    except Exception as e:
+        print(f"Error in initialize_single_game_with_code: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
 
 @game_bp.route('/finish-classic-game', methods=['POST'])
 @require_auth
@@ -119,6 +177,48 @@ def get_game(game_id):
         return jsonify(game)
     except Exception as e:
         print(f"Error in get_game: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+
+@game_bp.route('/competition-single-game', methods=['GET'])
+@require_auth
+def get_competition_single_game():
+    """
+    Get a random competition game
+    """
+    try:
+        user_id = request.user_id
+        
+        # Ensure user exists in database
+        user = Users.query.filter_by(user_id=user_id).first()
+        if not user:
+            return jsonify({
+                'error': 'User not found',
+                'status': 'error'
+            }), 404
+            
+        # Get a random competition game
+        game_id, images = game_service.get_random_competition_game(user_id)
+        
+        # Update user's games_started count
+        user.games_started += 1
+        db.session.commit()
+        
+        return jsonify({
+            'gameId': game_id,
+            'images': images,
+            'status': 'success'
+        })
+        
+    except ValueError as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 400
+    except Exception as e:
+        print(f"Error in get_competition_single_game: {str(e)}")
         return jsonify({
             'error': str(e),
             'status': 'error'
