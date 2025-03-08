@@ -2,10 +2,9 @@ from __init__ import db
 from models import Tag, UserTags, Users
 from sqlalchemy.exc import SQLAlchemyError
 
-def get_tags():
+def get_tags(admin_id):
     try:
-        tags = db.session.query(Tag.tag_id, Tag.name, Tag.admin_id).all()
-        
+        tags = db.session.query(Tag.tag_id, Tag.name, Tag.admin_id).filter_by(admin_id=admin_id).all()
         if not tags:
             return {"message": "No tags found"}
         
@@ -34,35 +33,38 @@ def get_tag_by_id(tag_id):
 def add_tag(name, admin_id=None):
     try:
         if admin_id:
-            new_tag = Tag(name=name, admin_id=admin_id)
-        else:
-            new_tag = Tag(name=name, admin_id=None)
-        
+            public_tag = db.session.query(Tag).filter_by(name=name, admin_id=None).first()
+            if public_tag:
+                return {"error": f"Tag '{name}' already exists as a public tag."}, 400
+        new_tag = Tag(name=name, admin_id=admin_id)
         db.session.add(new_tag)
         db.session.commit()
 
-        return {"tag_id": new_tag.tag_id, "name": new_tag.name, "admin_id": new_tag.admin_id}
+        return {"tag_id": new_tag.tag_id, "name": new_tag.name, "admin_id": new_tag.admin_id}, 200
     except SQLAlchemyError as e:
         db.session.rollback()
         print(f"Error adding tag: {e}")
-        return {"error": "Failed to add tag"}
+        return {"error": "Failed to add tag"}, 500
 
-
-def update_tag(tag_id, name):
+def update_tag(tag_id, name, admin_id):
     try:
         tag = db.session.query(Tag).filter(Tag.tag_id == tag_id).first()
 
         if not tag:
-            return {"error": "Tag not found"}
+            return {"error": "Tag not found"}, 404
+        if tag.admin_id is not None:
+            public_tag = db.session.query(Tag).filter_by(name=name, admin_id=None).first()
+            if public_tag:
+                return {"error": f"Tag name '{name}' already exists as a public tag."}, 400
 
         tag.name = name
         db.session.commit()
 
-        return {"tag_id": tag.tag_id, "name": tag.name}
+        return {"tag_id": tag.tag_id, "name": tag.name}, 200
     except SQLAlchemyError as e:
         db.session.rollback()
         print(f"Error updating tag: {e}")
-        return {"error": str(e)}
+        return {"error": "Failed to update tag"}, 500
 
 def delete_tag(tag_id):
     try:
@@ -142,6 +144,3 @@ def get_tags_for_user(user_id):
         db.session.rollback()
         print(f"Error fetching tags for user: {e}")
         return {"error": str(e)}
-
-
-

@@ -6,7 +6,7 @@ bp = Blueprint('adminTags', __name__)
 @bp.route('/admin/getTags', methods=['GET'])
 def get_tags_route():
     try:
-        tags = get_tags()
+        tags = get_tags('4')
         return jsonify(tags), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -16,23 +16,21 @@ def add_tag_route():
     try:
         data = request.get_json()
         name = data.get('name')
-        admin_id = data.get('admin_id')
 
-        new_tag = add_tag(name, admin_id)
-        
-        return jsonify(new_tag), 201
+        new_tag, status_code = add_tag(name, '4')
+        return jsonify(new_tag), status_code
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @bp.route('/admin/updateTag/<tag_id>', methods=['POST'])
 def update_tag_route(tag_id):
     try:
         data = request.get_json()
-        updated_tag = update_tag(tag_id, data.get('name'))
-        return jsonify(updated_tag), 200
+        updated_tag, status_code = update_tag(tag_id, data.get('name'), '4')
+        return jsonify(updated_tag), status_code
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @bp.route('/admin/deleteTag/<tag_id>', methods=['DELETE'])
 def delete_tag_route(tag_id):

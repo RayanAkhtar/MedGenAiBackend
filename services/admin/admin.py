@@ -120,9 +120,12 @@ def get_random_unresolved_feedback(image_id):
         db.session.rollback()
         return {"error": str(e)}
 
-def list_tags():
+def list_tags(admin_id):
     try:
-        return list({tag[0] for tag in db.session.query(Tag.name).all()})
+        tags = db.session.query(Tag.name).filter(
+            (Tag.admin_id == admin_id) | (Tag.admin_id == None)
+        ).distinct().all()
+        return [tag[0] for tag in tags]
     except Exception as e:
         logging.error(f"Error fetching tags: {str(e)}", exc_info=True)
         raise
@@ -202,7 +205,8 @@ def count_users_by_tags(tag_names, match_all=True):
         count = query.count()
         return count if count is not None else 0
     except Exception as e:
-        return {"error": str(e)}
+        logging.error(f"Error in count_users_by_tags: {str(e)}", exc_info=True)
+        raise
 
 
 UPLOAD_FOLDER = '../MedGenAI-Images/Images/'
@@ -239,7 +243,9 @@ def upload_image_service(request, image_type):
         return jsonify({'error': 'Invalid age value'}), 400
     if disease not in ['None', 'Pleural_Effusion']:
         return jsonify({'error': 'Invalid disease value'}), 400
-
+    if disease == 'None':
+        disease = 'none'
+         
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         

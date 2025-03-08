@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from __init__ import db
 from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags, CompetitionUser, Game, UserGameSession
+from sqlalchemy import text
 import random
 
 load_dotenv("../.env")
@@ -59,6 +60,7 @@ def process_csv():
     except Exception as e:
         print(f"Error processing CSV: {e}")
 
+"""
 def drop_tables():
     try:
         db.drop_all()
@@ -66,13 +68,29 @@ def drop_tables():
     except Exception as e:
         print(f"An error occurred while dropping tables: {str(e)}")
         raise e
-
+"""
+def drop_tables():
+    try:
+        # Drop only the necessary tables in reverse order of dependencies
+        print("Dropping tables...")
+        db.session.execute(text('DROP TABLE IF EXISTS feedback_users CASCADE'))
+        db.session.execute(text('DROP TABLE IF EXISTS feedback CASCADE'))
+        db.session.execute(text('DROP TABLE IF EXISTS user_guesses CASCADE'))
+        db.session.execute(text('DROP TABLE IF EXISTS user_game_sessions CASCADE'))
+        db.session.execute(text('DROP TABLE IF EXISTS games CASCADE'))
+        db.session.commit()
+        print("Selected tables have been dropped.")
+    except Exception as e:
+        db.session.rollback()
+        print(f"An error occurred while dropping tables: {str(e)}")
+        raise e
+        
 def setup_tables():
     try:
         db.create_all()
         print("Tables created successfully.")
         
-        process_csv()
+        #process_csv()
 
     except Exception as e:
         print(f"An error occurred while setting up tables: {str(e)}")
@@ -136,6 +154,7 @@ def generate_hundreds_of_user_guesses_with_feedback(num_guesses=500):
 def populate_tables():
     """Populate tables using SQLAlchemy insert."""
     try:
+        """
         users = [
             Users(user_id=1, username="test_user1", level=1, exp=100, games_started=5, games_won=3, score=120),
             Users(user_id=2, username="test_user2", level=2, exp=150, games_started=7, games_won=5, score=180),
@@ -152,7 +171,7 @@ def populate_tables():
         db.session.add_all(tag_entries)
         db.session.commit()
         print("Tags successfully inserted.")
-
+        """
         games = [
             Game(game_id=1, game_mode="Classic", date_created=datetime(2025, 1, 1).date(), game_board="Standard", 
                  game_status="Active", expiry_date=datetime(2025, 12, 31).date(), created_by=1),
@@ -198,7 +217,7 @@ def populate_tables():
         # db.session.add_all(competitions)
         # db.session.commit()
         # print("Competitions successfully inserted.")
-
+        """
         images = [
             Images(image_id=111111, image_path='/test_images/fake_1.jpg', image_type='ai', 
                    upload_time=datetime(2023, 3, 17), gender='male', age=55, disease='none'),
@@ -211,7 +230,7 @@ def populate_tables():
         db.session.add_all(images)
         db.session.commit()
         print("Images successfully inserted.")
-
+        """
         user_guesses, feedback_entries, feedback_users_entries = generate_hundreds_of_user_guesses_with_feedback(num_guesses=300)  # Generate 500 user guesses with feedback
         db.session.add_all(user_guesses)
         db.session.add_all(feedback_entries)
@@ -234,3 +253,4 @@ def populate_tables():
     except Exception as e:
         print(f"An error occurred while populating tables: {str(e)}")
         raise e
+
