@@ -69,7 +69,7 @@ def generate_image(age: str = "", gender: str = "", disease: str = "", real_imag
     if gender_condition or disease_condition:
         query = query.filter(or_(gender_condition, disease_condition))
 
-    if real_image_file_name:
+    if real_image_file_name and (gender != "any" or age != "any" or disease != "any"):
         return get_real_image_based_on_sex_or_disease(gender, disease, real_image_file_name)
 
     image = query.first()
