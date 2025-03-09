@@ -13,7 +13,7 @@ from services.admin.admin import (
     get_random_unresolved_feedback,
     upload_image_service,
     list_tags,
-    filter_users_by_tags,
+    paginated_filter_users_by_tags,
     count_users_by_tags,
     assign_tags_to_users,
     get_metadata_counts
@@ -104,7 +104,7 @@ def get_users_by_tags():
         desc = request.args.get('desc', 'true').lower() == 'true'
         limit = request.args.get('limit', default=10, type=int)
         offset = request.args.get('offset', default=0, type=int)
-        return jsonify(filter_users_by_tags(tag_names, match_all, sort_by, desc, limit, offset))
+        return jsonify(paginated_filter_users_by_tags(tag_names, match_all, sort_by, desc, limit, offset))
     except Exception as e:
         logging.error(f"Server error: {str(e)}")
         return jsonify({"error": "An unexpected error occurred"}), 500
@@ -126,13 +126,16 @@ def assign_tags_route():
     data = request.get_json()
     usernames = data.get('usernames', [])
     tags = data.get('tags', [])
+    filter_tags = data.get('filterTags', [])
     admin_id = data.get('admin_id', '4')
+    select_all = data.get('selectAll', False)
+    match_all = data.get('all', False)
     
     if not usernames or not tags or not admin_id:
         return jsonify({"error": "usernames, tags, and admin_id are required fields."}), 400
 
     try:
-        response = assign_tags_to_users(usernames, tags, admin_id)
+        response = assign_tags_to_users(usernames, tags, admin_id, select_all, filter_tags, match_all)
         return response
 
     except SQLAlchemyError as e:
@@ -251,12 +254,16 @@ def create_new_user_game_session_multi():
     if not data:
         return jsonify({'error': 'Missing JSON body'}), 400
     game_code = data.get('game_code')
-    usernames = data.get('usernames')
+    usernames = data.get('usernames', [])
+    select_all = data.get('selectAll', False)
+    filter_tags = data.get('filterTags', [])
+    match_all = data.get('all', False)
+    
     if game_code is None:
         return jsonify({'error': 'Missing "game_id"'}), 400
-    if usernames is None:
-        return jsonify({'error': 'Missing "usernames"'}), 400
-    res, code = create_multiple_game_sessions(game_code, usernames)
+    if not usernames and not select_all:
+        return jsonify({'error': 'Missing "usernames" or "selectAll" must be true'}), 400
+    res, code = create_multiple_game_sessions(game_code, usernames, select_all, filter_tags, match_all)
 
     if code == 200:
         return jsonify({'status': code}), 200

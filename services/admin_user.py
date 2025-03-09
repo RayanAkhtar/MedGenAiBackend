@@ -7,7 +7,7 @@ import os
 from flask import jsonify, flash
 from werkzeug.utils import secure_filename
 from decimal import Decimal
-
+from .admin.admin import filter_users_by_tags
 
 def get_users_with_filters(sort_by=None, sort_order='asc', limit=20, offset=0, level=None, min_games_won=None, max_games_won=None, min_score=None, max_score=None):
     try:
@@ -198,21 +198,30 @@ def create_user_game_session(game_code, user_name):
     """Creates a new UserGameSession and commits it to the database."""
     return create_multiple_game_sessions(game_code, [user_name])
     
-def create_multiple_game_sessions(game_code, usernames):
+def create_multiple_game_sessions(game_code, usernames, select_all=False, filter_tags=[], match_all=False):
     """Creates multiple UserGameSession objects for a given game_id and list of user_ids."""
-    from sqlalchemy.exc import SQLAlchemyError
     try:
         new_sessions = []
         game_code_entry = db.session.query(GameCode).filter_by(game_code=game_code).first()
         if not game_code_entry:
             return {"error": "Invalid game code"}, 404
         game_id = game_code_entry.game_id
-        
-        users = db.session.query(Users).filter(Users.username.in_(usernames)).all()
-        if not users or len(users) != len(usernames):
-            return {"error": "One or more usernames are invalid"}, 404
 
-        user_ids = {user.user_id for user in users}
+        if select_all:
+            user_query = filter_users_by_tags(filter_tags, match_all)
+            all_users = user_query.all()
+            all_user_ids = {user.Users.user_id for user in all_users}
+
+            excluded_users = db.session.query(Users.user_id).filter(Users.username.in_(usernames)).all()
+            excluded_user_ids = {user.user_id for user in excluded_users}
+
+            user_ids = all_user_ids - excluded_user_ids
+        else:
+            users = db.session.query(Users).filter(Users.username.in_(usernames)).all()
+            if not users or len(users) != len(usernames):
+                return jsonify({"error": "One or more usernames are invalid"}), 404
+            user_ids = {user.user_id for user in users}
+
         existing_sessions = db.session.query(UserGameSession.user_id).filter(
             and_(
                 UserGameSession.game_id == game_id,
@@ -243,7 +252,7 @@ def create_multiple_game_sessions(game_code, usernames):
     except SQLAlchemyError as e:
         db.session.rollback()
         print(f"Error creating user game sessions: {e}")
-        return {'error': str(e)}, 404  # Return None if an error occurs
+        return {'error': str(e)}, 500  # Return None if an error occurs
 
 def get_assigned_games_by_username(username):
     try:
