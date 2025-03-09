@@ -8,13 +8,12 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 logger = logging.getLogger(__name__)
 # Admin only
-def create_competition(name, expiry, game_code):
+def create_competition(name, expiry ,game_code):
     """
     Create a new game first then gets the game id from it.
     Creates a new competition using that same id.
     """
     logger.info(f"Creating competition : {name}")
-    logger.info(f"Expiry date : {expiry}")
 
     game = Game.query.filter_by(game_id=game_code).first()
     if not game:
@@ -25,17 +24,18 @@ def create_competition(name, expiry, game_code):
         return jsonify({'message': 'Competition already exists'}), 400
     try:
         
+        real_expiry = expiry if not game.expiry_date else game.expiry_date
         
         new_competition = Competition(
             competition_id=game_code,
             competition_name=name,
             start_date=datetime.now(),
-            end_date=expiry,
+            end_date=real_expiry,
         )
 
         db.session.add(new_competition)
         db.session.commit()
-        return jsonify({'message': 'Competition created successfully', 'competition_id': new_competition.competition_id}), 201
+        return jsonify({'message': 'Competition created successfully', 'competition_id': new_competition.competition_id}), 200
     except Exception as e:
         logger.error(f"Error creating competition: {e}")
         db.session.rollback()
@@ -118,12 +118,14 @@ def get_game_by_game_id(game_id):
     try:
         # Fetch the game from the database
         game = db.session.query(Game).filter_by(game_id=game_id).first()
-        created_by = db.session.query(Users).filter_by(user_id=game.created_by).first()
-
+        
         # If game not found, return an error message
         if not game:
-            return {"error": "Game not found"}
-
+            return {"error": "Game not found"}, 404
+        
+        created_by = db.session.query(Users).filter_by(user_id=game.created_by).first()
+        game_code = db.session.query(GameCode).filter_by(game_id=game_id).first()
+        
         # Construct the response
         game_data = {
             "game_id": game.game_id,
@@ -132,10 +134,10 @@ def get_game_by_game_id(game_id):
             "game_board": game.game_board,
             "game_status": game.game_status,
             "expiry_date": game.expiry_date,
-            "created_by": created_by.username,
-       }
-
+            "created_by": created_by.username if created_by else None,
+            "game_code": game_code.game_code if game_code else None
+        }
+        
         return game_data, 200
     except Exception as e:
-        return {"error": str(e)}, 404
-    
+        return {"error": str(e)}, 500
