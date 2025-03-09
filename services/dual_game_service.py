@@ -47,14 +47,16 @@ def create_dual_game(game_mode, game_status, username, image_urls):
         game_id, game_code, code = create_game(game_mode, game_status, username, game_board='dual')
         if not game_id:
             return game_code, code  # Return the error from create_game
-
-        for image_id in image_ids:
+        for image_id in image_ids: 
             game_image = GameImages(
                 game_id=game_id,
                 image_id=image_id.image_id
             )
             db.session.add(game_image)
-        db.session.commit()
+            db.session.flush()  
+
+        db.session.commit()  # Commit all changes together
+
         return {'game_code': game_code}, 201
     except Exception as e:
         db.session.rollback()  # Rollback in case of error
