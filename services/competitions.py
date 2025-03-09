@@ -21,6 +21,10 @@ def create_competition(name, expiry, game_code):
 
 
     game = Game.query.filter_by(game_id=game_id).first()
+    
+    logger.info(f"Game id is : {game_id}")
+    
+    
     if not game:
         return jsonify({'message': 'Game not found'}), 404
     comp = Competition.query.filter_by(competition_id=game_id).first()
