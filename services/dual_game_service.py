@@ -29,7 +29,7 @@ def create_game(game_mode, game_status, username, game_board):
         db.session.add(game_code) 
         db.session.commit() 
 
-        return game.game_id, f"GAME-{game.game_id}", 201
+        return game.game_id, game_code.game_code, 201
     except Exception as e:
         db.session.rollback()  # Rollback in case of error
         logging.error(f"Error creating game: {e}")
