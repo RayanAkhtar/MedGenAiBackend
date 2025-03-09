@@ -8,14 +8,18 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 logger = logging.getLogger(__name__)
 # Admin only
-def create_competition(name, expiry ,game_code):
+def create_competition(name, expiry, game_code):
     """
     Create a new game first then gets the game id from it.
     Creates a new competition using that same id.
     """
     logger.info(f"Creating competition : {name}")
+    
+    # get the game id from the game_code
+    
+    game_id = get_game_id_from_game_code(game_code)
 
-    game = Game.query.filter_by(game_id=game_code).first()
+    game = Game.query.filter_by(game_id=game_id).first()
     if not game:
         return jsonify({'message': 'Game not found'}), 404
     comp = Competition.query.filter_by(competition_id=game_code).first()
@@ -27,7 +31,7 @@ def create_competition(name, expiry ,game_code):
         real_expiry = expiry if not game.expiry_date else game.expiry_date
         
         new_competition = Competition(
-            competition_id=game_code,
+            competition_id=game_id,
             competition_name=name,
             start_date=datetime.now(),
             end_date=real_expiry,
@@ -139,5 +143,19 @@ def get_game_by_game_id(game_id):
         }
         
         return game_data, 200
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+
+def get_game_id_from_game_code(game_code):
+    try:
+        # Fetch the game ID from the database using the game code
+        game_code_entry = db.session.query(GameCode).filter_by(game_code=game_code).first()
+        
+        # If game code not found, return an error message
+        if not game_code_entry:
+            return {"error": "Game code not found"}, 404
+        
+        return {"game_id": game_code_entry.game_id}, 200
     except Exception as e:
         return {"error": str(e)}, 500
