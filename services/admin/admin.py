@@ -1,6 +1,7 @@
 from __init__ import db
-from models import Users, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags
-from sqlalchemy import func, desc, text, case
+from models import Users, Admin, UserGuess, Images, FeedbackUser, Feedback, Competition, Tag, UserTags
+from sqlalchemy import func, desc, text, case, and_
+from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 import os
 import logging
@@ -120,20 +121,22 @@ def get_random_unresolved_feedback(image_id):
         db.session.rollback()
         return {"error": str(e)}
 
-def list_tags(admin_id):
+def list_tags(admin_id, admin_only=False):
     try:
-        tags = db.session.query(Tag.name).filter(
-            (Tag.admin_id == admin_id) | (Tag.admin_id == None)
-        ).distinct().all()
+        if admin_only:
+            tags = db.session.query(Tag.name).filter(Tag.admin_id == admin_id).distinct().all()
+        else:
+            tags = db.session.query(Tag.name).filter(
+                (Tag.admin_id == admin_id) | (Tag.admin_id == None)
+            ).distinct().all()
         return [tag[0] for tag in tags]
     except Exception as e:
         logging.error(f"Error fetching tags: {str(e)}", exc_info=True)
         raise
 
-def filter_users_by_tags(tag_names, match_all=True, sort_by="username", desc=True, limit=10, offset=0):
+def filter_users_by_tags(tag_names, match_all=True):
     try:
         query = None
-        sort_column = getattr(Users, sort_by) if sort_by in ["username", "level", "score", "games_started"] else None
         
         if not tag_names or len(tag_names) == 0:
             # Return all users
@@ -143,6 +146,8 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="username", desc=Tru
                 func.count(func.distinct(UserGuess.guess_id)).filter(UserGuess.user_guess_type == Images.image_type).label("correct_guesses")
             ).outerjoin(UserGuess, UserGuess.user_id == Users.user_id
             ).outerjoin(Images, Images.image_id == UserGuess.image_id
+            ).outerjoin(Admin, Admin.user_id == Users.user_id
+            ).filter(Admin.user_id.is_(None)
             ).group_by(Users.user_id)
         else:
             tag_names = [t.lower() for t in tag_names]    
@@ -159,7 +164,18 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="username", desc=Tru
             # Apply filter for tags
             if match_all:
                 query = query.having(func.count(func.distinct(Tag.tag_id)) >= len(tag_names))
+        return query
+        
+    except Exception as e:
+        logging.error(f"Error in filter_users_by_tags: {str(e)}", exc_info=True)
+        raise
 
+
+def paginated_filter_users_by_tags(tag_names, match_all=True, sort_by="username", desc=True, limit=10, offset=0):
+    try:
+        query = filter_users_by_tags(tag_names, match_all)
+        sort_column = getattr(Users, sort_by) if sort_by in ["username", "level", "score", "games_started"] else None
+        
         # Sorting
         if sort_column:
             query = query.order_by(sort_column.desc() if desc else sort_column)
@@ -182,21 +198,28 @@ def filter_users_by_tags(tag_names, match_all=True, sort_by="username", desc=Tru
         return data
         
     except Exception as e:
-        logging.error(f"Error in filter_users_by_tags: {str(e)}", exc_info=True)
+        logging.error(f"Error in paginated_filter_users_by_tags: {str(e)}", exc_info=True)
         raise
 
 def count_users_by_tags(tag_names, match_all=True):
     try:
         query = None
         if not tag_names or len(tag_names) == 0:
-            query = db.session.query(Users.user_id)
+            query = db.session.query(Users.user_id
+            ).outerjoin(Admin, Admin.user_id == Users.user_id
+            ).filter(Admin.user_id.is_(None))
         else:
             tag_names = [t.lower() for t in tag_names]
 
             # Base query
             query = db.session.query(
                 Users.user_id
-            ).join(UserTags).join(Tag).filter(func.lower(Tag.name).in_(tag_names)).group_by(Users.user_id)
+            ).join(UserTags).join(Tag
+            ).outerjoin(Admin, Admin.user_id == Users.user_id
+            ).filter(
+                func.lower(Tag.name).in_(tag_names),
+                Admin.user_id.is_(None) 
+            ).group_by(Users.user_id)
 
             # Apply filter for tags
             if match_all:
@@ -208,6 +231,65 @@ def count_users_by_tags(tag_names, match_all=True):
         logging.error(f"Error in count_users_by_tags: {str(e)}", exc_info=True)
         raise
 
+def assign_tags_to_users(usernames, tags, admin_id, select_all=False, filter_tags=[], match_all=False):
+    try:
+        tag_results = db.session.query(Tag).filter(
+            and_(
+                Tag.name.in_(tags),
+                Tag.admin_id == admin_id
+            )
+        ).all()
+
+        if not tag_results:
+            return jsonify({"error": "No valid private tags found for the provided admin ID."}), 400
+        
+        tag_id_map = {tag.name: tag.tag_id for tag in tag_results}
+
+        if select_all:
+            query = filter_users_by_tags(filter_tags, match_all)
+            if not query:
+                return jsonify({"error": "No users found matching filters"}), 400
+            all_users = query.with_entities(Users.user_id).all()
+            all_user_ids = {user.user_id for user in all_users}
+            
+            excluded_users = db.session.query(Users.user_id).filter(Users.username.in_(usernames)).all()
+            excluded_user_ids = {user.user_id for user in excluded_users}
+            user_ids = all_user_ids - excluded_user_ids
+        else:
+            users = db.session.query(Users).filter(Users.username.in_(usernames)).all()
+            if not users:
+                return jsonify({"error": "No valid users found for the provided usernames."}), 400
+            user_ids = {user.user_id for user in users}
+
+        if not user_ids:
+            return jsonify({"message": "No users to assign tags to."}), 200
+                
+        new_user_tags = []
+        existing_user_tags = db.session.query(UserTags).filter(
+            UserTags.user_id.in_(user_ids),
+            UserTags.tag_id.in_(tag_id_map.values())
+        ).all()
+
+        existing_user_tag_set = {(ut.user_id, ut.tag_id) for ut in existing_user_tags}
+
+        for user_id in user_ids:
+            for tag_name in tags:
+                if tag_name in tag_id_map:
+                    tag_id = tag_id_map[tag_name]
+                    if (user_id, tag_id) not in existing_user_tag_set:
+                        new_user_tags.append(UserTags(user_id=user_id, tag_id=tag_id))
+                        
+        if new_user_tags:
+            db.session.bulk_save_objects(new_user_tags)
+            db.session.commit()
+            return jsonify({"message": f"Tags assigned successfully to {len(user_ids)} users."}), 200
+            
+        return jsonify({"message": "No new tags to assign."}), 200
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print(f"Error assigning tags to users: {e}")
+        return jsonify({"error": "An error occurred while assigning tags."}), 500
 
 UPLOAD_FOLDER = '../MedGenAI-Images/Images/'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
