@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, flash, send_from_directory
 import os
 import logging
 from werkzeug.utils import secure_filename
+from services.dual_game_service import create_dual_game
 from __init__ import db
 from services.admin.admin import (
     get_guesses_per_month,
@@ -246,3 +247,18 @@ def create_new_user_game_session_multi():
 def get_games_by_user(username):
     user_data = get_assigned_games_by_username(username)
     return jsonify(user_data)
+
+@bp.route('/admin/createDualGame', methods=['POST'])
+def create_d_game():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Missing JSON body'}), 400
+    game_mode = data.get('game_mode')
+    game_board = data.get('game_board')
+    game_status = data.get('game_status')
+    username = data.get('username')
+    image_urls = data.get('image_urls')
+    if game_mode is None or game_status is None or username is None or image_urls is None or game_board is None:
+        return jsonify({'error': 'Missing required fields'}), 400
+    res, code = create_dual_game(game_mode, game_status, username, image_urls)
+    return jsonify(res), code
