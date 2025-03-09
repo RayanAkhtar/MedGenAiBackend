@@ -260,5 +260,5 @@ def create_d_game():
     image_urls = data.get('image_urls')
     if game_mode is None or game_status is None or username is None or image_urls is None or game_board is None:
         return jsonify({'error': 'Missing required fields'}), 400
-    res, code = create_dual_game(game_mode, game_status, username, image_urls, game_board)
+    res, code = create_dual_game(game_mode, game_status, username, image_urls)
     return jsonify(res), code
