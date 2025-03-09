@@ -204,6 +204,6 @@ def ensure_date_equality(mapper, connection, target):
     # Fetch the associated game
     game = db.session.query(Game).filter_by(game_id=target.competition_id).first()
     if game:
-        game.expiry_date = target.expiry_date
+        game.expiry_date = target.end_date
     else:
         raise ValueError(f"No game found with ID {target.competition_id}!")
