@@ -11,6 +11,7 @@ def create_game(game_mode, game_status, username, game_board):
         if not created_by:
             return None, {"error": "User not found"}, 404
 
+        # Create and add the game
         game = Game(
             game_board=game_board,
             game_mode=game_mode,
@@ -19,13 +20,16 @@ def create_game(game_mode, game_status, username, game_board):
             game_status=game_status
         )
         db.session.add(game)
-        db.session.commit()
+        db.session.flush()
 
-        game_id = game.game_id
+        # Create game_code based on the new game_id
         game_code = GameCode(
-            game_id=game_id
+            game_id=game.game_id
         )
-        return game_id, game_code
+        db.session.add(game_code) 
+        db.session.commit() 
+
+        return game.game_id, f"GAME-{game.game_id}", 201
     except Exception as e:
         db.session.rollback()  # Rollback in case of error
         logging.error(f"Error creating game: {e}")
