@@ -17,7 +17,7 @@ def create_competition(name, expiry, game_code):
     
     # get the game id from the game_code
     
-    game_id = get_game_id_from_game_code(game_code).get("game_id")
+    game_id, code = get_game_id_from_game_code(game_code).get("game_id")
 
     game = Game.query.filter_by(game_id=game_id).first()
     if not game:
