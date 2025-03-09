@@ -30,12 +30,8 @@ def get_profile_data(user_id):
     games_played = len(completed_sessions)
     
     # Calculate accuracy
-    total_correct = 0
-    total_guesses = 0
-    
-    for session in completed_sessions:
-        total_correct += session.correct_guesses or 0
-        total_guesses += session.total_guesses or 0
+    total_correct = sum(session.correct_guesses or 0 for session in completed_sessions)
+    total_guesses = sum(session.total_guesses or 0 for session in completed_sessions)
     
     accuracy = 0
     if total_guesses > 0:
@@ -46,6 +42,14 @@ def get_profile_data(user_id):
     
     # Get total points
     points = user.score or 0
+    
+    print(f"Profile data for user {user_id}:")
+    print(f"Games played: {games_played}")
+    print(f"Total correct: {total_correct}")
+    print(f"Total guesses: {total_guesses}")
+    print(f"Accuracy: {accuracy}%")
+    print(f"Rank: {user_rank}")
+    print(f"Points: {points}")
     
     return {
         "gamesPlayed": games_played,
@@ -69,10 +73,13 @@ def get_recent_game_history(user_id):
     """
     # Get user's completed game sessions, ordered by completion time
     sessions = UserGameSession.query.filter_by(
-        user_id=user_id    ).order_by(UserGameSession.completion_time.desc()).limit(10).all()
+        user_id=user_id,
+        session_status='completed'  # Only get completed sessions
+    ).order_by(UserGameSession.completion_time.desc()).limit(10).all()
+    
+    print(f"Found {len(sessions)} recent games for user {user_id}")
     
     history = []
-    
     for session in sessions:
         # Get game details
         game = Game.query.filter_by(game_id=session.game_id).first()
@@ -88,26 +95,31 @@ def get_recent_game_history(user_id):
         
         # Format date
         date_played = session.completion_time.strftime("%Y-%m-%d %H:%M") if session.completion_time else "Unknown"
-
+        
         # Calculate accuracy
         accuracy = 0
         if session.total_guesses and session.total_guesses > 0:
             accuracy = round((session.correct_guesses / session.total_guesses) * 100, 1)
         
-        # Add to history
-        history.append({
+        game_data = {
             "id": session.game_id,
             "type": game.game_mode.capitalize(),
             "accuracy": accuracy,
             "date": date_played,
-            "images": image_count
-        })
+            "images": image_count,
+            "score": session.final_score,
+            "correctGuesses": session.correct_guesses,
+            "totalGuesses": session.total_guesses
+        }
+        
+        print(f"Game data: {game_data}")
+        history.append(game_data)
     
     return {"games": history}
 
 def get_user_performance(user_id):
     """
-    Get performance statistics for a user
+    Get performance statistics for a user over time
     Args:
         user_id: ID of the user to get stats for
     Returns:
@@ -124,8 +136,11 @@ def get_user_performance(user_id):
     
     sessions = UserGameSession.query.filter(
         UserGameSession.user_id == user_id,
-                        UserGameSession.completion_time >= thirty_days_ago
+        UserGameSession.session_status == 'completed',
+        UserGameSession.completion_time >= thirty_days_ago
     ).order_by(UserGameSession.completion_time).all()
+    
+    print(f"Found {len(sessions)} sessions in last 30 days for user {user_id}")
     
     # Initialize performance data
     all_mode = {"labels": [], "data": []}
@@ -145,6 +160,8 @@ def get_user_performance(user_id):
         accuracy = 0
         if session.total_guesses and session.total_guesses > 0:
             accuracy = round((session.correct_guesses / session.total_guesses) * 100, 1)
+        
+        print(f"Session {session.session_id}: {accuracy}% accuracy on {date_label}")
         
         # Add to all modes
         all_mode["labels"].append(date_label)

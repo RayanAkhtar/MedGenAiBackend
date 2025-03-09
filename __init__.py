@@ -55,7 +55,7 @@ def create_app(test_config=None):
         from routes.auth import auth_signup_bp
         from routes.user_dashboard import user_dashboard
         app.register_blueprint(bp)
-        app.register_blueprint(profile_bp)
+        app.register_blueprint(profile_bp, url_prefix='/profile')
         app.register_blueprint(comp_bp)
 
 

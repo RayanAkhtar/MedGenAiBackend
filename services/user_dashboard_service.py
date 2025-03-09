@@ -19,6 +19,7 @@ class UserDashboardService:
             # Calculate average accuracy from completed game sessions
             completed_sessions = UserGameSession.query.filter_by(
                 user_id=user_id,
+                session_status='completed'
             ).all()
             
             print(f"Found {len(completed_sessions)} completed sessions for user {user_id}")
@@ -32,8 +33,9 @@ class UserDashboardService:
                 func.sum(UserGameSession.correct_guesses).label("total_correct"),
                 func.sum(UserGameSession.total_guesses).label("total_guesses")
             ).filter(
-                UserGameSession.user_id == user_id
-                                        ).first()
+                UserGameSession.user_id == user_id,
+                UserGameSession.session_status == 'completed'
+            ).first()
             
             total_correct = session_totals.total_correct or 0
             total_guesses = session_totals.total_guesses or 0
@@ -77,7 +79,7 @@ class UserDashboardService:
     def get_recent_activity(self, user_id):
         """Get user's recent game activity"""
         # Get recent sessions for this user
-        recent_sessions = UserGameSession.query.filter_by(user_id=user_id)\
+        recent_sessions = UserGameSession.query.filter_by(user_id=user_id, session_status='completed')\
             .order_by(UserGameSession.completion_time.desc())\
             .limit(5)\
             .all()
@@ -127,6 +129,7 @@ class UserDashboardService:
             # Calculate user's accuracy based on game sessions
             user_sessions = UserGameSession.query.filter_by(
                 user_id=user.user_id,
+                session_status='completed'
             )
             total_sessions = user_sessions.count()
             
