@@ -17,7 +17,8 @@ def create_competition(name, expiry, game_code):
     
     # get the game id from the game_code
     
-    game_id, code = get_game_id_from_game_code(game_code).get("game_id")
+    game_id = get_game_id_from_game_code(game_code)
+
 
     game = Game.query.filter_by(game_id=game_id).first()
     if not game:
@@ -156,6 +157,6 @@ def get_game_id_from_game_code(game_code):
         if not game_code_entry:
             return {"error": "Game code not found"}, 404
         
-        return {"game_id": game_code_entry.game_id}, 200
+        return game_code_entry.game_id
     except Exception as e:
         return {"error": str(e)}, 500
