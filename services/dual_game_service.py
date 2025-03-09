@@ -40,9 +40,9 @@ def create_dual_game(game_mode, game_status, username, image_urls):
         if not image_ids:
             return {"error": "No images found for the provided URLs"}, 400
 
-        game_id, game_code = create_game(game_mode, game_status, username, game_board='dual')
+        game_id, game_code, code = create_game(game_mode, game_status, username, game_board='dual')
         if not game_id:
-            return game_code  # Return the error from create_game
+            return game_code, code  # Return the error from create_game
 
         for image_id in image_ids:
             game_image = GameImages(
