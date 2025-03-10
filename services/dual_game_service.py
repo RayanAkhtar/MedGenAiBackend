@@ -2,7 +2,7 @@ from __init__ import db
 from models import *
 from sqlalchemy import text, bindparam, func
 from datetime import datetime 
-from flask import jsonify
+from flask import jsonify, request
 import logging
 
 def create_game(game_mode, game_status, username, game_board):
@@ -62,3 +62,99 @@ def create_dual_game(game_mode, game_status, username, image_urls):
         db.session.rollback()  # Rollback in case of error
         logging.error(f"Error creating dual game: {e}")
         return {"error": f"Error creating dual game"}, 500
+
+
+def initialize_dual_game_backend(num_rounds, user_id):
+    """
+    Backend logic to initialize a dual game with specified number of rounds and user ID.
+    
+    Args:
+        num_rounds (int): Number of rounds in the game
+        user_id (str): User's ID who is creating the game
+        
+    Returns:
+        dict: Game data including game code, mode, rounds, and settings
+    """
+    try:
+        real_count = num_rounds
+        ai_count = num_rounds
+        
+        print(f"Fetching {real_count} real images and {ai_count} AI images")
+        
+        real_images = get_images_rand(real_count, 'real')
+        print(f"Got {len(real_images)} real images")
+        
+        ai_images = get_images_rand(ai_count, 'ai')
+        print(f"Got {len(ai_images)} AI images")
+        
+        # Create new game in database
+        new_game = Game(
+            game_mode='dual',
+            date_created=datetime.utcnow(),
+            game_board='dual',
+            game_status='active',
+            expiry_date=datetime.utcnow() + datetime.timedelta(days=1),  # Game expires in 24 hours
+            created_by=user_id,
+        )
+        db.session.add(new_game)
+        db.session.flush()  # This will show errors before commit
+        print(f"Game created successfully with ID: {new_game.game_id}")
+        
+        # Generate a unique game code
+        game_code = str(uuid.uuid4())[:8].upper()
+        # Create GameCode entry
+        game_code_entry = GameCode(
+            game_id=new_game.game_id,
+            game_code=game_code
+        )
+        db.session.add(game_code_entry)
+        
+        # Format images with their types and create GameImages entries
+        rounds = []
+        for i in range(num_rounds):
+            round_images = [
+                {
+                    'id': str(uuid.uuid4()),
+                    'url': real_images[i],
+                    'isCorrect': True
+                },
+                {
+                    'id': str(uuid.uuid4()),
+                    'url': ai_images[i],
+                    'isCorrect': False
+                }
+            ]
+            rounds.append({
+                'roundId': str(uuid.uuid4()),
+                'images': round_images
+            })
+            
+            # Add images to GameImages table
+            for img in round_images:
+                image_path = img['url'].split('/api/images/view/')[-1]
+                image = Images.query.filter_by(image_path=image_path).first()
+                if image:
+                    game_image = GameImages(
+                        game_id=new_game.game_id,
+                        image_id=image.image_id
+                    )
+                    db.session.add(game_image)
+        
+        db.session.commit()
+        
+        game_data = {
+            'gameCode': game_code,
+            'gameMode': 'dual',
+            'rounds': rounds,
+            'settings': {
+                'timerPerRound': 60,
+                'maxRounds': num_rounds
+            }
+        }
+        
+        return game_data, 201
+    
+    except Exception as e:
+        print(f"Error initializing dual game: {str(e)}")
+        db.session.rollback()
+        return {"error": f"Error initializing dual game"}, 500

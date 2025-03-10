@@ -4,6 +4,7 @@ from models import Users, UserGuess, Images
 from __init__ import db
 from services.game_service import GameService
 import random
+from services.dual_game_service import initialize_dual_game_backend
 
 game_bp = Blueprint('game', __name__)
 game_service = GameService()
@@ -225,4 +226,25 @@ def get_competition_single_game():
             'error': str(e),
             'status': 'error'
         }), 500
+
+@game_bp.route('/initialize-dual-game', methods=['POST'])
+@require_auth
+def initialize_dual_game():
+    """
+    Initialize a dual game with specified number of rounds and user ID.
+    """
+    try:
+        data = request.get_json()
+        num_rounds = data.get('num_rounds')
+        user_id = request.user_id  # From @require_auth decorator
+        
+        if not num_rounds or not user_id:
+            return jsonify({"error": "num_rounds and user_id are required"}), 400
+        
+        game_data, status_code = initialize_dual_game_backend(num_rounds, user_id)
+        return jsonify(game_data), status_code
+    
+    except Exception as e:
+        print(f"Error in initialize_dual_game: {str(e)}")
+        return jsonify({"error": f"Error initializing dual game"}), 500
 
