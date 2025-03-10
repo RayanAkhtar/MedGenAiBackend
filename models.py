@@ -1,6 +1,6 @@
 from __init__ import db
 from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy import event
+from sqlalchemy import event, text
 import sqlalchemy as sa
 
 class Competition(db.Model):
@@ -197,15 +197,23 @@ class CompetitionGame(db.Model):
     game = db.relationship('Game', backref=db.backref('competition_games', lazy=True)) 
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.tag_id'), primary_key=True) 
 
+
 @event.listens_for(Competition, 'before_insert')
 @event.listens_for(Competition, 'before_update')
 def ensure_date_equality(mapper, connection, target):
     """Ensure that start_date and end_date in Competition match date_created and expiry_date in Game."""
-    # Fetch the associated game
-    game = db.session.query(Game).filter_by(game_id=target.competition_id).first()
+    
+    # Use raw SQL to avoid implicit session flush
+    game = connection.execute(
+        text("SELECT expiry_date FROM games WHERE game_id = :game_id"),
+        {"game_id": target.competition_id}
+    ).fetchone()
+
     if game:
-        # Ensure end_date = expiry_date
-        if target.end_date != game.expiry_date:
-            raise ValueError(f"end_date ({target.end_date}) must match expiry_date ({game.expiry_date}) of the linked game.")
+        # Update the expiry_date of the game
+        connection.execute(
+            text("UPDATE games SET expiry_date = :expiry_date WHERE game_id = :game_id"),
+            {"expiry_date": target.end_date, "game_id": target.competition_id}
+        )
     else:
         raise ValueError(f"No game found with ID {target.competition_id}!")
