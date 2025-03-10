@@ -205,14 +205,14 @@ def ensure_date_equality(mapper, connection, target):
     
     # Use raw SQL to avoid implicit session flush
     game = connection.execute(
-        text("SELECT expiry_date FROM game WHERE game_id = :game_id"),
+        text("SELECT expiry_date FROM games WHERE game_id = :game_id"),
         {"game_id": target.competition_id}
     ).fetchone()
 
     if game:
         # Update the expiry_date of the game
         connection.execute(
-            text("UPDATE game SET expiry_date = :expiry_date WHERE game_id = :game_id"),
+            text("UPDATE games SET expiry_date = :expiry_date WHERE game_id = :game_id"),
             {"expiry_date": target.end_date, "game_id": target.competition_id}
         )
     else:
