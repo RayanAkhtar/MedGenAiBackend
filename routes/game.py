@@ -251,6 +251,7 @@ def initialize_dual_game():
 @game_bp.route('/api/get_dual_game/<game_code>', methods=['GET'])
 @require_auth
 def get_dual_game(game_code):
+    print("get_dual_game")
     """
     Retrieve dual game data using the game code.
     """
