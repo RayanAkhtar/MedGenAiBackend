@@ -248,7 +248,7 @@ def initialize_dual_game():
         print(f"Error in initialize_dual_game: {str(e)}")
         return jsonify({"error": f"Error initializing dual game"}), 500
 
-@game_bp.route('/api/get-dual-game/<game_code>', methods=['GET'])
+@game_bp.route('/api/get_dual_game/<game_code>', methods=['GET'])
 @require_auth
 def get_dual_game(game_code):
     """
