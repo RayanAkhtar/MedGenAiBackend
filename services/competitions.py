@@ -53,10 +53,15 @@ def create_competition(name, expiry, game_code):
 
 def get_all_competitions():
     """
-    Retrieves all competitions with their associated game boards.
+    Retrieves all competitions with their associated game boards and game codes.
     """
     try:
-        competitions = db.session.query(Competition, Game.game_board).join(Game, Competition.competition_id == Game.game_id).all()
+        competitions = (
+            db.session.query(Competition, Game.game_board, GameCode.game_code)
+            .join(Game, Competition.competition_id == Game.game_id)
+            .join(GameCode, Competition.competition_id == GameCode.game_id)
+            .all()
+        )
         
         result = [
             {
@@ -64,14 +69,14 @@ def get_all_competitions():
                 'name': comp.competition_name,
                 'start_date': comp.start_date,
                 'end_date': comp.end_date,
-                'game_board': game_board 
-            } for comp, game_board in competitions
+                'game_board': game_board,
+                'game_code': game_code
+            } for comp, game_board, game_code in competitions
         ]
         
         return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 def get_competition(game_id):
     """
