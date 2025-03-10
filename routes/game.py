@@ -4,7 +4,7 @@ from models import Users, UserGuess, Images
 from __init__ import db
 from services.game_service import GameService
 import random
-from services.dual_game_service import initialize_dual_game_backend
+from services.dual_game_service import initialize_dual_game_backend, get_dual_game_backend
 
 game_bp = Blueprint('game', __name__)
 game_service = GameService()
@@ -247,4 +247,18 @@ def initialize_dual_game():
     except Exception as e:
         print(f"Error in initialize_dual_game: {str(e)}")
         return jsonify({"error": f"Error initializing dual game"}), 500
+
+@game_bp.route('/get-dual-game/<game_code>', methods=['GET'])
+@require_auth
+def get_dual_game(game_code):
+    """
+    Retrieve dual game data using the game code.
+    """
+    try:
+        game_data, status_code = get_dual_game_backend(game_code)
+        return jsonify(game_data), status_code
+    
+    except Exception as e:
+        print(f"Error in get_dual_game: {str(e)}")
+        return jsonify({"error": f"Error fetching dual game"}), 500
 

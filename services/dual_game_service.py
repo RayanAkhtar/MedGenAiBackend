@@ -158,3 +158,58 @@ def initialize_dual_game_backend(num_rounds, user_id):
         print(f"Error initializing dual game: {str(e)}")
         db.session.rollback()
         return {"error": f"Error initializing dual game"}, 500
+
+def get_dual_game_backend(game_code):
+    """
+    Backend logic to fetch dual game data using the game code.
+    
+    Args:
+        game_code (str): Code of the game to fetch
+        
+    Returns:
+        dict: Game data including game code, mode, rounds, and settings
+    """
+    try:
+        game_code_entry = GameCode.query.filter_by(game_code=game_code).first()
+        if not game_code_entry:
+            return {"error": "Game not found"}, 404
+        
+        game = Game.query.filter_by(game_id=game_code_entry.game_id).first()
+        if not game:
+            return {"error": "Game not found"}, 404
+        
+        rounds = []
+        for game_image in game.game_images:
+            image = game_image.image
+            round_id = str(uuid.uuid4())
+            rounds.append({
+                'roundId': round_id,
+                'images': [
+                    {
+                        'id': str(uuid.uuid4()),
+                        'url': f"/api/images/view/{image.image_path}",
+                        'isCorrect': image.image_type == 'real'
+                    },
+                    {
+                        'id': str(uuid.uuid4()),
+                        'url': f"/api/images/view/{image.image_path}",
+                        'isCorrect': image.image_type == 'ai'
+                    }
+                ]
+            })
+        
+        game_data = {
+            'gameCode': game_code,
+            'gameMode': game.game_mode,
+            'rounds': rounds,
+            'settings': {
+                'timerPerRound': 60,
+                'maxRounds': len(rounds)
+            }
+        }
+        
+        return game_data, 200
+    
+    except Exception as e:
+        print(f"Error fetching dual game: {str(e)}")
+        return {"error": f"Error fetching dual game"}, 500
