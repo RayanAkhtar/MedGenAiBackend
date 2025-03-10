@@ -33,7 +33,7 @@ def initialize_classic_game():
         print(f"User found: {user}")
         
         # Initialize classic game - will get a mix of real and AI images
-        game_id, images = game_service.initialize_classic_game(
+        game_id, images, code = game_service.initialize_classic_game(
             image_count=image_count,
             user_id=user.user_id
         )
@@ -45,7 +45,8 @@ def initialize_classic_game():
         return jsonify({
             'gameId': game_id,
             'images': images,
-            'status': 'success'
+            'status': 'success',
+            'gameCode': code
         })
 
     except ValueError as e:
@@ -93,7 +94,7 @@ def initialize_single_game_with_code():
         print(f"User found: {user}")
         
         # Initialize game with code
-        game_id, images = game_service.initialize_game_with_code(
+        game_id, images, game_code = game_service.initialize_game_with_code(
             game_code=game_code,
             user_id=user.user_id,
             image_count=image_count
@@ -104,7 +105,8 @@ def initialize_single_game_with_code():
         return jsonify({
             'gameId': game_id,
             'images': images,
-            'status': 'success'
+            'status': 'success',
+            'gameCode': game_code
         })
 
     except ValueError as e:

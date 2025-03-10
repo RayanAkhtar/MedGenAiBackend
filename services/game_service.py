@@ -1,4 +1,4 @@
-from models import Users, Images, UserGuess, Game, GameImages, UserGameSession, Feedback, FeedbackUser, Competition, CompetitionGame
+from models import Users, Images, UserGuess, Game, GameImages, UserGameSession, Feedback, FeedbackUser, Competition, CompetitionGame, GameCode
 from __init__ import db
 from typing import Tuple, List, Dict
 import uuid
@@ -11,7 +11,7 @@ class GameService:
         print("Initializing GameService")
         self.active_sessions = {}
 
-    def initialize_classic_game(self, image_count: int, user_id: str) -> Tuple[str, List[Dict]]:
+    def initialize_classic_game(self, image_count: int, user_id: str) -> Tuple[str, List[Dict], str]:
         """
         Initialize a classic game with mixed real and AI images
         
@@ -20,7 +20,7 @@ class GameService:
             user_id (str): User's ID who is creating the game
             
         Returns:
-            Tuple[str, List[dict]]: Game ID and list of image URLs
+            Tuple[str, List[dict], string]: Game ID, list of image URLs, and game code
         """
         try:
             print(f"[DEBUG] Initializing classic game for user {user_id}")
@@ -60,6 +60,17 @@ class GameService:
             db.session.flush()  # This will show errors before commit
             print(f"Game created successfully with ID: {new_game.game_id}")
 
+            # Generate a unique game code
+            game_code = str(uuid.uuid4())[:8].upper()
+            # Create GameCodeTable entry
+            game_code_entry = GameCode(
+                game_id=new_game.game_id,
+                game_code=game_code
+            )
+            # print in red
+            print(f"\033[91m[DEBUG] Game code: {game_code}\033[0m")
+            db.session.add(game_code_entry)
+            
             # Format images with their types and create GameImages entries
             image_data = []
             print("[DEBUG] Processing images and creating GameImages entries")
@@ -116,7 +127,7 @@ class GameService:
             }
 
             print(f"[DEBUG] Classic game initialized successfully with {len(image_data)} images")
-            return str(new_game.game_id), image_data
+            return str(new_game.game_id), image_data, game_code
 
         except Exception as e:
             print(f"[ERROR] Error initializing classic game: {str(e)}")
@@ -317,7 +328,9 @@ class GameService:
         """
         try:
             print(f"Getting game with ID {game_id} for user {user_id}")
-            
+            game_code_obj = GameCode.query.filter_by(game_code=game_id).first()
+            if game_code_obj:
+                game_id = game_code_obj.game_id
             # Get the game
             game = Game.query.filter_by(game_id=game_id).first()
             print(f"Found game: {game}")
@@ -339,6 +352,10 @@ class GameService:
             # Get all sessions for this game
             sessions = []
             print(f"Getting sessions for game {game_id}")
+            # get game id from game code
+            # Check if game_id is actually a game code
+            
+            print(f"Game ID: {game_id}")
             for session in UserGameSession.query.filter_by(game_id=game_id).all():
                 user = Users.query.filter_by(user_id=session.user_id).first()
                 print(f"Processing session {session.session_id} for user {user.username if user else 'Unknown'}")
@@ -370,7 +387,7 @@ class GameService:
             print(f"Error in get_game: {str(e)}")
             raise
 
-    def initialize_game_with_code(self, game_code: str, user_id: str, image_count: int) -> Tuple[str, List[Dict]]:
+    def initialize_game_with_code(self, game_code: str, user_id: str, image_count: int) -> Tuple[str, List[Dict], str]:
         """
         Initialize a game with a specified game code
         
@@ -416,6 +433,12 @@ class GameService:
         )
         db.session.add(new_game)
         db.session.flush()
+        # Create GameCode entry
+        game_code_entry = GameCode(
+            game_id=new_game.game_id,
+            game_code=game_code
+        )
+        db.session.add(game_code_entry)
            # Format images with their types and create GameImages entries
         image_data = []
         for url in real_images + ai_images:
@@ -436,7 +459,7 @@ class GameService:
                     'url': url,
                     'type': image.image_type
                 })
-        return str(new_game.game_id), image_data
+        return str(new_game.game_id), image_data, game_code
     def get_random_competition_game(self, user_id: str) -> Tuple[str, List[Dict]]:
         """
         Get a random game from all available games that hasn't expired
