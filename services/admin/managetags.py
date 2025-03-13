@@ -6,7 +6,7 @@ def get_tags(admin_id):
     try:
         tags = db.session.query(Tag.tag_id, Tag.name, Tag.admin_id).filter_by(admin_id=admin_id).all()
         if not tags:
-            return {"message": "No tags found"}
+            return []
         
         return [
             {"tag_id": tag.tag_id, "name": tag.name, "admin_id": tag.admin_id}
