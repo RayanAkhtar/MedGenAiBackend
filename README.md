@@ -121,13 +121,19 @@ flask db upgrade
 
 
 ## Backfilling the images database
-Use the scripts/vm_images_setup.py file to backfill the images database, however you will need to have the images in the Images folder in the MedGenAi-Images folder which is in the same directory containing the MedGenAiBackend folder.
+Use the following scripts to backfill the images database, however you will need to have the images in the Images folder in the MedGenAi-Images folder which is in the same directory containing the MedGenAiBackend folder.
 You can download this from a onedrive link.
 
-Run the script with:
+Run the scripts with:
 ```
-python scripts/vm_images_setup.py
+python scripts/dropTables.py
+python scripts/setup.py
+python populateTestValues.py
 ```
+The first script will perform a hard reset on the database, destroying any tables.
+The second script will recreate the relevant tables and populate them with the images in the MedGenAI-Images folder.
+The third script will create test data should you wish to continue developing the product.
+
 
 ## Project Structure
 ```
