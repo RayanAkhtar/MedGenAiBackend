@@ -131,6 +131,16 @@ python scripts/vm_images_setup.py
 
 ## Project Structure
 ```
+MedGenAI-Images/
+├── Images/
+│   ├── cf_Female/
+│   ├── cf_Male/
+│   ├── cf_No_disease/
+│   ├── cf_Null
+│   ├── cf_Pleural_Effusion
+│   ├── generated
+│   ├── real_images
+│   ├── test_cfs.csv
 MedGenAiBackend/
 ├── app/
 │   ├── __init__.py
