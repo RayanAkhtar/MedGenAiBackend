@@ -33,6 +33,9 @@ You can generate this yourself or contact Mohamed Sharif (mas222@ic.ac.uk)for it
 You will also need to have the postgres database running with your username and password, we currently use medgen_user and blackberry as the username and password, this isn't running on the main server so make sure to keep your alternative usernames and passwords safe.
 
 
+## Other Requirements
+You will need to have a folder to contain images in the same level as this backend repo called MedGenAI-Images
+Please contact Rayan Akhtar (ra1422@ic.ac.uk) for this.
 
 ### Running the Server
 ```
