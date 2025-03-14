@@ -517,6 +517,10 @@ class GameService:
             # Use the join_game method to get the game details
             response = self.get_dual_game_by_id(game_id)
             response['gameCode'] = game_code
+            response["settings"] = {
+                    "totalRounds": len(response["rounds"]),
+                    "timerPerRound": 60,
+                }
             print(f"Returning response for dual game {game_id} \n response: {response}")
             return response
             
@@ -573,7 +577,6 @@ class GameService:
             # Build response
             response = {
                 "gameId": str(game_id),
-                "totalRounds": len(rounds),
                 "rounds": rounds
             }
 
