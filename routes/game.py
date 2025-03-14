@@ -226,3 +226,41 @@ def get_competition_single_game():
             'status': 'error'
         }), 500
 
+
+@game_bp.route('/get_dual_game_by_code', methods=['POST'])
+#@require_auth
+def get_dual_game_by_game_code():
+    """
+    Get a dual game by game code
+    """
+    try:
+        data = request.get_json()
+        game_code = data.get('game_code')
+        print(f"game_code: {game_code}")
+        #user_id = request.user_id
+        
+        if not game_code:
+            return jsonify({
+                'error': 'Game code is required',
+                'status': 'error'
+            }), 400
+            
+        # Get dual game by game code
+        game_data = game_service.get_dual_game_by_game_code(game_code, None)
+        
+        return jsonify({
+            "game_data": game_data,
+            'status': 'success'
+        })
+        
+    except ValueError as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 400
+    except Exception as e:
+        print(f"Error in get_dual_game_by_game_code: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500

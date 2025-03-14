@@ -490,3 +490,97 @@ class GameService:
         except Exception as e:
             print(f"Error getting random game: {str(e)}")
             raise
+    
+    
+    def get_dual_game_by_game_code(self, game_code: str, user_id: str = None) -> Dict:
+        """
+        Get a dual game by its game code
+        
+        Args:
+            game_code (str): Game code to retrieve
+            user_id (str, optional): User ID to join the game
+            
+        Returns:
+            Dict: A dictionary containing dual game data
+        """
+        try:
+            print(f"Getting dual game with code {game_code}")
+            
+            # Get the game ID from the game code
+            game_code_obj = GameCode.query.filter_by(game_code=game_code).first()
+            if not game_code_obj:
+                raise ValueError(f"Game code {game_code} not found")
+            
+            game_id = game_code_obj.game_id
+            print(f"Found game ID: {game_id}")
+            
+            # Use the join_game method to get the game details
+            response = self.get_dual_game_by_id(game_id)
+            response['gameCode'] = game_code
+            print(f"Returning response for dual game {game_id} \n response: {response}")
+            return response
+            
+        except Exception as e:
+            print(f"Error getting dual game by code: {str(e)}")
+            raise
+
+
+    def get_dual_game_by_id(self, game_id: int) -> Dict:
+        """
+        Get a dual game by its game ID
+        
+        Args:
+            game_id (int): ID of the game to retrieve
+            
+        Returns:
+            Dict: A dictionary containing dual game data        
+        """
+        try:
+            print(f"Getting dual game with ID {game_id}")
+            
+            # Get the game
+            game = Game.query.filter_by(game_id=game_id).first()
+            if not game:
+                raise ValueError(f"Dual Game with ID {game_id} not found")
+            print(f"Found dual game: {game}")
+            
+            # Get all game images
+            game_images = []
+            isCorrect = True
+            sorted_game_images = sorted(game.game_images, key=lambda gi: gi.id)
+            print(f"Getting images for dual game {game_id}")
+            for game_image in sorted_game_images:
+                image = game_image.image
+                game_images.append({
+                    'id': str(game_image.id),
+                    'url': f"/api/images/view/{image.image_path}",
+                    "isCorrect": isCorrect,
+                })
+                isCorrect = not isCorrect
+            print(f"Found {len(game_images)} images")
+            if (len(game_images) % 2) != 0:
+                raise ValueError(f"Invalid number of images for dual game: {len(game_images)}")
+            
+            # Create rounds
+            rounds = []
+            for i in range(0, len(game_images), 2):
+                round_images = game_images[i:i + 2]
+                rounds.append({
+                    'roundId': str(i // 2),
+                    'images': round_images
+                })
+            
+            # Build response
+            response = {
+                "gameId": str(game_id),
+                "totalRounds": len(rounds),
+                "rounds": rounds
+            }
+
+            print(f"Returning response for dual game {game_id} \n response: {response}")
+            
+            return response
+        
+        except Exception as e:
+            print(f"Error getting dual game by ID: {str(e)}")
+            raise
