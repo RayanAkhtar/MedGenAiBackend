@@ -236,6 +236,7 @@ def get_dual_game_by_game_code():
     try:
         data = request.get_json()
         game_code = data.get('game_code')
+        print(f"game_code: {game_code}")
         #user_id = request.user_id
         
         if not game_code:
