@@ -246,7 +246,7 @@ def get_dual_game_by_game_code():
             }), 400
             
         # Get dual game by game code
-        game_data = game_service.get_dual_game_by_game_code(game_code, user_id)
+        game_data = game_service.get_dual_game_by_game_code(game_code, None)
         
         return jsonify({
             "game_data": game_data,
