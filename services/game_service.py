@@ -524,6 +524,7 @@ class GameService:
             print(f"Error getting dual game by code: {str(e)}")
             raise
 
+
     def get_dual_game_by_id(self, game_id: int) -> Dict:
         """
         Get a dual game by its game ID
