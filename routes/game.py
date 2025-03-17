@@ -297,7 +297,7 @@ def initialize_classic_dual_game():
         #     user_id=user.user_id
         # )
 
-        game_code = game_service.initialize_dual_game(round_count, None)
+        game_code = game_service.initialize_dual_game(round_count)
         game_data = game_service.get_dual_game_by_game_code(game_code, None)
 
         # Update user's games_started count
