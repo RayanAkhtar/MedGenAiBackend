@@ -272,6 +272,7 @@ def initialize_classic_dual_game():
     """
     Initialize a classic dual game where users guess between real and AI images
     """
+    print("Initializing classic dual game")
     try:
         data = request.get_json()
         round_count = data.get('round_count', 10)  # Default to 10 images if not specified
