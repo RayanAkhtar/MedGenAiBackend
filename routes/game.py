@@ -276,7 +276,7 @@ def initialize_classic_dual_game():
     try:
         data = request.get_json()
         round_count = data.get('round_count', 10)  # Default to 10 images if not specified
-        user_id = request.user_id  # From @require_auth decorator
+        #user_id = request.user_id  # From @require_auth decorator
 
         print(f"Initializing classic dual game")
         print(f"Round count: {round_count}")
