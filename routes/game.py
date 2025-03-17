@@ -267,7 +267,7 @@ def get_dual_game_by_game_code():
 
 
 @game_bp.route('/initialize-classic-dual-game', methods=['POST'])
-@require_auth
+# @require_auth
 def initialize_classic_dual_game():
     """
     Initialize a classic dual game where users guess between real and AI images
@@ -297,8 +297,8 @@ def initialize_classic_dual_game():
         #     user_id=user.user_id
         # )
 
-        game_code = game_service.initialize_dual_game(round_count, user_id)
-        game_data = game_service.get_dual_game_by_game_code(game_code, user_id)
+        game_code = game_service.initialize_dual_game(round_count, None)
+        game_data = game_service.get_dual_game_by_game_code(game_code, None)
 
         # Update user's games_started count
         # user.games_started += 1

@@ -491,7 +491,7 @@ class GameService:
             print(f"Error getting random game: {str(e)}")
             raise
     
-    def initialize_dual_game(self, round_count: int, user_id: str) -> str:
+    def initialize_dual_game(self, round_count: int, user_id: str = "1") -> str:
         try:
             print(f"[DEBUG] Initializing dual classic game for user {user_id}")
             print(f"[DEBUG] Requested round count: {round_count}")
