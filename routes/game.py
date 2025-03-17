@@ -264,3 +264,41 @@ def get_dual_game_by_game_code():
             'error': str(e),
             'status': 'error'
         }), 500
+
+
+@game_bp.route('/initialize-classic-dual-game', methods=['POST'])
+@require_auth
+def initialize_classic_dual_game():
+    """
+    Initialize a classic dual game where users guess between real and AI images
+    """
+    print("Initializing classic dual game")
+    try:
+        data = request.get_json()
+        round_count = data.get('round_count', 10)  # Default to 10 images if not specified
+        user_id = request.user_id  # From @require_auth decorator
+
+        print(f"Initializing classic dual game")
+        print(f"Round count: {round_count}")
+        
+
+        game_code = game_service.initialize_dual_game(round_count)
+        game_data = game_service.get_dual_game_by_game_code(game_code, user_id)
+
+
+        return jsonify({
+            "game_data": game_data,
+            'status': 'success'
+        })
+
+    except ValueError as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 400
+    except Exception as e:
+        print(f"Error in initialize_classic_game: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500

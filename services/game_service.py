@@ -491,7 +491,86 @@ class GameService:
             print(f"Error getting random game: {str(e)}")
             raise
     
-    
+    def initialize_dual_game(self, round_count: int, user_id: str = "1") -> str:
+        try:
+            print(f"[DEBUG] Initializing dual classic game for user {user_id}")
+            print(f"[DEBUG] Requested round count: {round_count}")
+
+            # Calculate how many of each type to fetch
+            real_count = round_count
+            ai_count = round_count
+            
+            print(f"[DEBUG] Fetching {real_count} real images and {ai_count} AI images")
+            
+            real_images = get_images_rand(real_count, 'real')
+            print(f"[DEBUG] Got {len(real_images)} real images")
+            print(f"[DEBUG] Real image URLs: {real_images}")
+            
+            ai_images = get_images_rand(ai_count, 'ai')
+            print(f"[DEBUG] Got {len(ai_images)} AI images")
+            print(f"[DEBUG] AI image URLs: {ai_images}")
+
+            print("[DEBUG] Creating new game in database")
+            
+            # Create new game in database
+            
+            new_game = Game(
+                game_mode='classic',
+                date_created=datetime.datetime.now(),
+                game_board='dual',
+                game_status='active',
+                expiry_date=datetime.datetime.now() + datetime.timedelta(days=7),  # Game expires in 7 days
+                created_by=user_id,
+            )
+            db.session.add(new_game)
+            db.session.flush()  # This will show errors before commit
+            print(f"Dual Game created successfully with ID: {new_game.game_id}")
+
+            # Generate a unique game code
+            game_code = str(uuid.uuid4())[:8].upper()
+            # Create GameCodeTable entry
+            game_code_entry = GameCode(
+                game_id=new_game.game_id,
+                game_code=game_code
+            )
+            # print in red
+            print(f"\033[91m[DEBUG] Game code: {game_code}\033[0m")
+            db.session.add(game_code_entry)
+
+
+            for i in range(round_count):
+                real_img = real_images[i]
+                ai_img = ai_images[i]
+
+                for url in [real_img, ai_img]:
+                    print(f"[DEBUG] Processing image URL: {url}")
+                    # Get image_id from URL
+                    image_path = url.split('/api/images/view/')[-1]
+                    print(f"[DEBUG] Extracted image path: {image_path}")
+                    image = Images.query.filter_by(image_path=image_path).first()
+                    
+                    if image:
+                        print(f"[DEBUG] Found image in database with ID: {image.image_id}")
+                        # Create GameImages entry
+                        game_image = GameImages(
+                            game_id=new_game.game_id,
+                            image_id=image.image_id
+                        )
+                        db.session.add(game_image)
+                    else:
+                        print(f"[WARNING] Image not found in database: {image_path}")
+                
+            db.session.commit()
+            return game_code
+
+        except Exception as e:
+            print(f"[ERROR] Error initializing dual classic game: {str(e)}")
+            print(f"[ERROR] Stack trace:", exc_info=True)
+            db.session.rollback()
+            raise
+
+
+
     def get_dual_game_by_game_code(self, game_code: str, user_id: str = None) -> Dict:
         """
         Get a dual game by its game code
